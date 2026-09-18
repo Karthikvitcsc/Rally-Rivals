@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Tennis Phone Controller</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+
+            display: flex;
+            justify-content: center;
+            align-items: center;
+
+            background:
+                radial-gradient(
+                    circle at top,
+                    #183b50,
+                    #071016 70%
+                );
+
+            color: white;
+
+            font-family:
+                "Segoe UI",
+                Tahoma,
+                Geneva,
+                Verdana,
+                sans-serif;
+
+            user-select: none;
+            overflow: hidden;
+        }
+
+        .controller {
+            width: 92%;
+            max-width: 430px;
+
+            padding: 28px 22px;
+
+            border-radius: 22px;
+
+            background: rgba(0, 0, 0, 0.72);
+
+            border:
+                1px solid
+                rgba(255, 255, 255, 0.15);
+
+            box-shadow:
+                0 15px 50px
+                rgba(0, 0, 0, 0.5);
+
+            text-align: center;
+
+            backdrop-filter: blur(10px);
+        }
+
+        h1 {
+            margin: 0 0 8px;
+
+            font-size: 28px;
+        }
+
+        .subtitle {
+            margin-bottom: 25px;
+
+            color: #aaa;
+
+            font-size: 13px;
+        }
+
+        #connection {
+            padding: 10px;
+
+            border-radius: 10px;
+
+            margin-bottom: 18px;
+
+            background: rgba(255,255,255,0.08);
+
+            font-size: 13px;
+        }
+
+        #motionButton {
+            width: 100%;
+
+            padding: 18px;
+
+            border: none;
+
+            border-radius: 14px;
+
+            background: #4deaea;
+
+            color: #10202a;
+
+            font-size: 18px;
+
+            font-weight: bold;
+
+            cursor: pointer;
+        }
+
+        #motionButton:active {
+            transform: scale(0.97);
+        }
+
+        .panel {
+            margin-top: 18px;
+
+            padding: 16px;
+
+            border-radius: 14px;
+
+            background: rgba(255,255,255,0.06);
+        }
+
+        .label {
+            color: #999;
+
+            font-size: 11px;
+
+            text-transform: uppercase;
+
+            letter-spacing: 1px;
+
+            margin-bottom: 5px;
+        }
+
+        .value {
+            font-size: 24px;
+
+            font-weight: bold;
+
+            color: #4deaea;
+        }
+
+        #tiltBar {
+            position: relative;
+
+            width: 100%;
+
+            height: 18px;
+
+            margin-top: 14px;
+
+            border-radius: 10px;
+
+            background: #222;
+
+            overflow: hidden;
+        }
+
+        #tiltCenter {
+            position: absolute;
+
+            left: 50%;
+
+            top: 0;
+
+            width: 2px;
+
+            height: 100%;
+
+            background: white;
+
+            opacity: 0.5;
+        }
+
+        #tiltIndicator {
+            position: absolute;
+
+            left: 50%;
+
+            top: 3px;
+
+            width: 12px;
+
+            height: 12px;
+
+            border-radius: 50%;
+
+            background: #4deaea;
+
+            transform: translateX(-50%);
+        }
+
+        #swingButton {
+            width: 100%;
+
+            margin-top: 18px;
+
+            padding: 25px 15px;
+
+            border: none;
+
+            border-radius: 16px;
+
+            background: #1976d2;
+
+            color: white;
+
+            font-size: 22px;
+
+            font-weight: bold;
+
+            cursor: pointer;
+        }
+
+        #swingButton:active {
+            transform: scale(0.95);
+
+            background: #2196f3;
+        }
+
+        #swing {
+            margin-top: 12px;
+
+            font-size: 14px;
+
+            color: #aaa;
+        }
+
+        .instructions {
+            margin-top: 20px;
+
+            font-size: 12px;
+
+            line-height: 1.6;
+
+            color: #aaa;
+        }
+
+    </style>
+</head>
+
+<body>
+
+<div class="controller">
+
+    <h1>🎾 Tennis Controller</h1>
+
+    <div class="subtitle">
+        Player 1 Phone Controller
+    </div>
+
+
+    <div id="connection">
+        Connecting to game...
+    </div>
+
+
+    <button id="motionButton">
+        ENABLE MOTION
+    </button>
+
+
+    <div class="panel">
+
+        <div class="label">
+            Phone Tilt
+        </div>
+
+        <div
+            class="value"
+            id="tiltValue"
+        >
+            CENTER
+        </div>
+
+
+        <div id="tiltBar">
+
+            <div id="tiltCenter"></div>
+
+            <div id="tiltIndicator"></div>
+
+        </div>
+
+    </div>
+
+
+    <button id="swingButton">
+        🎾 SWING
+    </button>
+
+
+    <div id="swing">
+        Last swing: None
+    </div>
+
+
+    <div class="instructions">
+
+        Tilt phone LEFT / RIGHT to move Player 1.<br>
+
+        Tap SWING to hit the ball.<br>
+
+        You can also physically swing the phone.
+
+    </div>
+
+</div>
+
+
+<script>
+
+    // ============================================================
+    // CONNECTION
+    // ============================================================
+
+    const connection =
+        document.getElementById("connection");
+
+
+    const tiltValue =
+        document.getElementById("tiltValue");
+
+
+    const tiltIndicator =
+        document.getElementById("tiltIndicator");
+
+
+    const swingDisplay =
+        document.getElementById("swing");
+
+
+    const motionButton =
+        document.getElementById("motionButton");
+
+
+    const swingButton =
+        document.getElementById("swingButton");
+
+
+    const protocol =
+        location.protocol === "https:"
+            ? "wss:"
+            : "ws:";
+
+
+    const socket =
+        new WebSocket(
+            protocol +
+            "//" +
+            location.host
+        );
+
+
+    let socketReady = false;
+
+
+    socket.onopen = () => {
+
+        socketReady = true;
+
+        connection.textContent =
+            "🟢 Connected to Tennis Game";
+
+        connection.style.color =
+            "#4deaea";
+
+    };
+
+
+    socket.onclose = () => {
+
+        socketReady = false;
+
+        connection.textContent =
+            "🔴 Disconnected from Game";
+
+        connection.style.color =
+            "#ff6b6b";
+
+    };
+
+
+    socket.onerror = () => {
+
+        socketReady = false;
+
+        connection.textContent =
+            "🔴 Connection Error";
+
+        connection.style.color =
+            "#ff6b6b";
+
+    };
+
+
+    socket.onmessage = (event) => {
+
+        try {
+
+            const data =
+                JSON.parse(event.data);
+
+            console.log(
+                "Server:",
+                data
+            );
+
+        } catch (error) {
+
+            console.error(
+                "Invalid server message",
+                error
+            );
+
+        }
+
+    };
+
+
+    // ============================================================
+    // SEND MESSAGE
+    // ============================================================
+
+    function sendMessage(data) {
+
+        if (
+            !socketReady ||
+            socket.readyState !== WebSocket.OPEN
+        ) {
+            return;
+        }
+
+        socket.send(
+            JSON.stringify(data)
+        );
+
+    }
+
+
+    // ============================================================
+    // PHONE MOVEMENT
+    // ============================================================
+
+    let currentMove = 0;
+
+    let lastSentMove = 999;
+
+
+    function updateMovement(gamma) {
+
+        if (
+            typeof gamma !== "number"
+        ) {
+            return;
+        }
+
+
+        // Phone tilt:
+
+        // approximately
+        // -25 degrees = full left
+        //   0 degrees = center
+        // +25 degrees = full right
+
+        let move =
+            gamma / 25;
+
+
+        move =
+            Math.max(
+                -1,
+                Math.min(
+                    1,
+                    move
+                )
+            );
+
+
+        // Dead zone around center.
+
+        if (
+            Math.abs(move) < 0.12
+        ) {
+            move = 0;
+        }
+
+
+        currentMove = move;
+
+
+        // Display
+
+        if (
+            move < -0.1
+        ) {
+
+            tiltValue.textContent =
+                "LEFT";
+
+        } else if (
+            move > 0.1
+        ) {
+
+            tiltValue.textContent =
+                "RIGHT";
+
+        } else {
+
+            tiltValue.textContent =
+                "CENTER";
+
+        }
+
+
+        // Move visual indicator.
+
+        const percentage =
+            50 +
+            move * 45;
+
+
+        tiltIndicator.style.left =
+            percentage + "%";
+
+
+        // Don't spam the server
+        // with identical values.
+
+        if (
+            Math.abs(
+                move -
+                lastSentMove
+            ) < 0.03
+        ) {
+            return;
+        }
+
+
+        lastSentMove =
+            move;
+
+
+        sendMessage({
+
+            type: "move",
+
+            player: 1,
+
+            x: move
+
+        });
+
+    }
+
+
+    // ============================================================
+    // DEVICE ORIENTATION
+    // ============================================================
+
+    function handleOrientation(event) {
+
+        updateMovement(
+            event.gamma
+        );
+
+    }
+
+
+    // ============================================================
+    // SWING DETECTION
+    // ============================================================
+
+    let lastSwingTime = 0;
+
+    const SWING_COOLDOWN = 700;
+
+
+    function detectSwing(event) {
+
+        if (
+            !event.accelerationIncludingGravity
+        ) {
+            return;
+        }
+
+
+        const a =
+            event.accelerationIncludingGravity;
+
+
+        const x =
+            a.x || 0;
+
+
+        const y =
+            a.y || 0;
+
+
+        const z =
+            a.z || 0;
+
+
+        const magnitude =
+            Math.sqrt(
+                x * x +
+                y * y +
+                z * z
+            );
+
+
+        /*
+           A phone sitting still is roughly
+           9.8 m/s² because of gravity.
+
+           A strong movement produces
+           a much larger value.
+        */
+
+        if (
+            magnitude < 20
+        ) {
+            return;
+        }
+
+
+        const now =
+            Date.now();
+
+
+        if (
+            now -
+            lastSwingTime <
+            SWING_COOLDOWN
+        ) {
+            return;
+        }
+
+
+        lastSwingTime =
+            now;
+
+
+        const power =
+            Math.min(
+                magnitude / 40,
+                1
+            );
+
+
+        sendSwing(
+            power
+        );
+
+    }
+
+
+    // ============================================================
+    // SEND SWING
+    // ============================================================
+
+    function sendSwing(power = 1) {
+
+        sendMessage({
+
+            type: "swing",
+
+            player: 1,
+
+            power: power,
+
+            timestamp: Date.now()
+
+        });
+
+
+        swingDisplay.textContent =
+            "Last swing: " +
+            power.toFixed(2);
+
+
+        console.log(
+            "SWING:",
+            power
+        );
+
+    }
+
+
+    // ============================================================
+    // ENABLE MOTION
+    // ============================================================
+
+    async function enableMotion() {
+
+        try {
+
+            // iPhone/iPad permission.
+
+            if (
+                typeof DeviceMotionEvent !==
+                "undefined" &&
+                typeof DeviceMotionEvent.requestPermission ===
+                "function"
+            ) {
+
+                const permission =
+                    await DeviceMotionEvent.requestPermission();
+
+
+                if (
+                    permission !==
+                    "granted"
+                ) {
+
+                    alert(
+                        "Motion permission was not granted."
+                    );
+
+                    return;
+                }
+
+            }
+
+
+            // Device orientation permission.
+
+            if (
+                typeof DeviceOrientationEvent !==
+                "undefined" &&
+                typeof DeviceOrientationEvent.requestPermission ===
+                "function"
+            ) {
+
+                const permission =
+                    await DeviceOrientationEvent.requestPermission();
+
+
+                if (
+                    permission !==
+                    "granted"
+                ) {
+
+                    alert(
+                        "Orientation permission was not granted."
+                    );
+
+                    return;
+                }
+
+            }
+
+
+            window.addEventListener(
+                "devicemotion",
+                detectSwing
+            );
+
+
+            window.addEventListener(
+                "deviceorientation",
+                handleOrientation
+            );
+
+
+            motionButton.textContent =
+                "✓ MOTION ENABLED";
+
+
+            motionButton.style.background =
+                "#45d483";
+
+
+            connection.textContent =
+                socketReady
+                    ? "🟢 Connected + Motion Enabled"
+                    : "🟡 Motion Enabled / Waiting for Game";
+
+
+        } catch (error) {
+
+            console.error(
+                "Motion permission error:",
+                error
+            );
+
+
+            alert(
+                "Could not enable motion sensors."
+            );
+
+        }
+
+    }
+
+
+    // ============================================================
+    // BUTTONS
+    // ============================================================
+
+    motionButton.addEventListener(
+        "click",
+        enableMotion
+    );
+
+
+    swingButton.addEventListener(
+        "click",
+        () => {
+
+            sendSwing(1);
+
+        }
+    );
+
+
+    // ============================================================
+    // INITIAL MESSAGE
+    // ============================================================
+
+    connection.textContent =
+        "🟡 Connecting to game...";
+
+</script>
+
+</body>
+</html>
