@@ -3,3 +3,11 @@ vinhack links:
 https://sticks-instant-container-sociology.trycloudflare.com/
 
 https://sticks-instant-container-sociology.trycloudflare.com/controller.html
+
+
+cd "C:\VIT\Hackathon Vinhack\tennis-controller"
+node server.js
+
+
+cd C:\cloudflared
+.\cloudflared.exe tunnel --url http://localhost:3000

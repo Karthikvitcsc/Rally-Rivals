@@ -1,3151 +1,3045 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>3D Tennis Pro - Animated Players & 5-Set Match</title>
-  <style>
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: #090d12;
-      color: white;
-      overflow: hidden;
-      user-select: none;
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Rally Rivals</title>
+
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+
+<style>
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    overflow: hidden;
+    background: #07111c;
+    font-family: Arial, sans-serif;
+    color: white;
+}
+
+/* =========================
+   LOBBY
+========================= */
+
+#lobbyScreen,
+#instructionScreen {
+
+    position: fixed;
+    inset: 0;
+
+    z-index: 100;
+
+    display: flex;
+    flex-direction: column;
+
+    justify-content: center;
+    align-items: center;
+
+    background:
+        radial-gradient(
+            circle at center,
+            #102d3d,
+            #050a10 75%
+        );
+
+    color: white;
+    text-align: center;
+}
+
+#instructionScreen {
+    display: none;
+}
+
+.lobbyTitle {
+
+    font-size: clamp(38px, 7vw, 72px);
+
+    font-weight: 900;
+
+    letter-spacing: 4px;
+
+    margin-bottom: 10px;
+}
+
+.lobbySubtitle {
+
+    color: #aaa;
+
+    font-size: 16px;
+
+    margin-bottom: 35px;
+}
+
+.playerJoinContainer {
+
+    display: flex;
+
+    gap: 50px;
+
+    justify-content: center;
+
+    align-items: center;
+}
+
+.playerJoinCard {
+
+    width: 280px;
+
+    padding: 25px;
+
+    border-radius: 20px;
+
+    background: rgba(255,255,255,.07);
+
+    border:
+        1px solid
+        rgba(255,255,255,.15);
+}
+
+.joinPlayerTitle {
+
+    font-size: 22px;
+
+    font-weight: bold;
+
+    margin-bottom: 18px;
+}
+
+#qr1,
+#qr2 {
+
+    width: 210px;
+    height: 210px;
+
+    margin: auto;
+
+    padding: 10px;
+
+    background: white;
+
+    border-radius: 10px;
+}
+
+#qr1 img,
+#qr2 img {
+
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.joinStatus {
+
+    margin-top: 18px;
+
+    font-size: 13px;
+
+    font-weight: bold;
+}
+
+.joinStatus.waiting {
+    color: #ffd166;
+}
+
+.joinStatus.connected {
+    color: #45d483;
+}
+
+#lobbyMessage {
+
+    margin-top: 30px;
+
+    color: #4deaea;
+
+    font-size: 15px;
+}
+
+/* =========================
+   INSTRUCTIONS
+========================= */
+
+.instructionTitle {
+
+    font-size: 48px;
+
+    font-weight: 900;
+
+    letter-spacing: 3px;
+
+    margin-bottom: 40px;
+}
+
+.instructionCards {
+
+    display: flex;
+
+    gap: 30px;
+}
+
+.instructionCard {
+
+    width: 260px;
+
+    padding: 30px;
+
+    border-radius: 20px;
+
+    background: rgba(255,255,255,.08);
+
+    border:
+        1px solid
+        rgba(255,255,255,.15);
+
+    font-size: 16px;
+
+    line-height: 1.6;
+}
+
+.instructionIcon {
+
+    font-size: 50px;
+
+    margin-bottom: 10px;
+}
+
+.instructionBig {
+
+    font-size: 24px;
+
+    font-weight: bold;
+
+    color: #4deaea;
+
+    margin-bottom: 10px;
+}
+
+#countdown {
+
+    margin-top: 40px;
+
+    font-size: 42px;
+
+    font-weight: 900;
+}
+
+/* =========================
+   SPLIT SCREEN
+========================= */
+
+#splitDivider {
+
+    position: fixed;
+
+    top: 0;
+    bottom: 0;
+
+    left: 50%;
+
+    width: 3px;
+
+    transform: translateX(-50%);
+
+    background: rgba(255,255,255,.5);
+
+    z-index: 5;
+
+    pointer-events: none;
+}
+
+/* =========================
+   HUD
+========================= */
+
+#hud {
+
+    position: fixed;
+
+    top: 12px;
+
+    left: 50%;
+
+    transform: translateX(-50%);
+
+    z-index: 10;
+
+    text-align: center;
+
+    pointer-events: none;
+}
+
+#title {
+
+    font-size: 24px;
+
+    font-weight: 900;
+
+    letter-spacing: 3px;
+
+    margin-bottom: 8px;
+}
+
+#scoreboard {
+
+    display: flex;
+
+    gap: 10px;
+
+    justify-content: center;
+}
+
+.scoreBox {
+
+    background: rgba(0,0,0,.7);
+
+    padding: 7px 18px;
+
+    border-radius: 8px;
+
+    font-weight: bold;
+}
+
+#status {
+
+    margin-top: 7px;
+
+    font-size: 14px;
+
+    color: #4deaea;
+
+    font-weight: bold;
+}
+
+#phoneStatus {
+
+    position: fixed;
+
+    top: 15px;
+
+    right: 15px;
+
+    z-index: 20;
+
+    background: rgba(0,0,0,.7);
+
+    padding: 8px 12px;
+
+    border-radius: 8px;
+
+    font-size: 12px;
+}
+
+#help {
+
+    position: fixed;
+
+    bottom: 12px;
+
+    left: 50%;
+
+    transform: translateX(-50%);
+
+    z-index: 10;
+
+    font-size: 12px;
+
+    color: #bbb;
+
+    text-align: center;
+
+    pointer-events: none;
+}
+
+#controls {
+
+    position: fixed;
+
+    bottom: 40px;
+
+    left: 50%;
+
+    transform: translateX(-50%);
+
+    z-index: 20;
+
+    display: flex;
+
+    gap: 10px;
+}
+
+button {
+
+    padding: 10px 18px;
+
+    border: none;
+
+    border-radius: 8px;
+
+    cursor: pointer;
+
+    font-weight: bold;
+}
+
+button:hover {
+
+    transform: scale(1.03);
+}
+
+/* =========================
+   MOBILE
+========================= */
+
+@media(max-width: 700px) {
+
+    .playerJoinContainer {
+
+        gap: 12px;
     }
 
-    #hud {
-      position: fixed;
-      top: 12px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 5;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 8px;
-      background: rgba(0,0,0,0.82);
-      padding: 12px 24px;
-      border-radius: 12px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.7);
-      border: 1px solid rgba(255,255,255,0.15);
-      backdrop-filter: blur(6px);
+    .playerJoinCard {
+
+        width: 45vw;
+
+        padding: 12px;
     }
 
-    .score-row {
-      display: flex;
-      gap: 25px;
-      align-items: center;
+    #qr1,
+    #qr2 {
+
+        width: 38vw;
+        height: 38vw;
     }
 
-    .score-box {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      min-width: 90px;
+    .instructionCards {
+
+        gap: 10px;
     }
 
-    .player-label {
-      font-size: 11px;
-      letter-spacing: 1px;
-      opacity: 0.8;
+    .instructionCard {
+
+        width: 42vw;
+
+        padding: 15px;
     }
 
-    .score {
-      font-size: 28px;
-      font-weight: bold;
-      color: #f2f35d;
-    }
+}
 
-    #sets-summary {
-      font-size: 13px;
-      letter-spacing: 1px;
-      color: #e0e0e0;
-      background: rgba(255,255,255,0.1);
-      padding: 4px 12px;
-      border-radius: 6px;
-    }
-
-    #status {
-      font-size: 13px;
-      font-weight: 600;
-      color: #4deaea;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
-
-    #controls {
-      position: fixed;
-      bottom: 18px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 5;
-      display: flex;
-      gap: 10px;
-    }
-
-    button {
-      padding: 12px 22px;
-      border: 0;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: bold;
-      background: #4deaea;
-      color: #10202a;
-      transition: all 0.2s ease;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-    }
-
-    button:hover {
-      background: #ffffff;
-      transform: translateY(-2px);
-    }
-
-    #help {
-      position: fixed;
-      top: 135px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 5;
-      background: rgba(0,0,0,0.6);
-      padding: 6px 14px;
-      border-radius: 20px;
-      font-size: 11px;
-      text-align: center;
-      border: 1px solid rgba(255,255,255,0.15);
-      backdrop-filter: blur(4px);
-    }
-
-    #phoneStatus {
-      position: fixed;
-      top: 12px;
-      right: 15px;
-      z-index: 10;
-      background: rgba(0,0,0,0.75);
-      padding: 10px 14px;
-      border-radius: 8px;
-      font-size: 12px;
-      border: 1px solid rgba(255,255,255,0.15);
-    }
-  </style>
+</style>
 </head>
 
 <body>
 
-  <div id="hud">
+<!-- =========================
+     LOBBY
+========================= -->
 
-    <div id="sets-summary">
-      SETS: P1 [0] - [0] P2
+<div id="lobbyScreen">
+
+    <div class="lobbyTitle">
+        🎾 RALLY RIVALS
     </div>
 
-    <div class="score-row">
+    <div class="lobbySubtitle">
+        Scan your player's QR code to join
+    </div>
 
-      <div class="score-box">
-        <div class="player-label">
-          PLAYER 1
+    <div class="playerJoinContainer">
+
+        <div class="playerJoinCard">
+
+            <div class="joinPlayerTitle">
+                PLAYER 1
+            </div>
+
+            <div id="qr1"></div>
+
+            <div
+                id="player1Status"
+                class="joinStatus waiting"
+            >
+                🟡 WAITING FOR PLAYER 1
+            </div>
+
         </div>
 
-        <div
-          class="score"
-          id="p1Score"
-        >
-          LOVE
+
+        <div class="playerJoinCard">
+
+            <div class="joinPlayerTitle">
+                PLAYER 2
+            </div>
+
+            <div id="qr2"></div>
+
+            <div
+                id="player2Status"
+                class="joinStatus waiting"
+            >
+                🟡 WAITING FOR PLAYER 2
+            </div>
+
         </div>
-
-        <div
-          style="font-size:12px; color:#aaa;"
-          id="p1Games"
-        >
-          GAMES: 0
-        </div>
-      </div>
-
-
-      <div>
-        <div id="status">
-          PRESS START
-        </div>
-      </div>
-
-
-      <div class="score-box">
-
-        <div class="player-label">
-          PLAYER 2 (AI)
-        </div>
-
-        <div
-          class="score"
-          id="p2Score"
-        >
-          LOVE
-        </div>
-
-        <div
-          style="font-size:12px; color:#aaa;"
-          id="p2Games"
-        >
-          GAMES: 0
-        </div>
-
-      </div>
 
     </div>
 
-  </div>
+    <div id="lobbyMessage">
+        Both players must connect
+    </div>
+
+</div>
 
 
-  <div id="phoneStatus">
-    📱 Phone: Connecting...
-  </div>
+<!-- =========================
+     INSTRUCTIONS
+========================= -->
+
+<div id="instructionScreen">
+
+    <div class="instructionTitle">
+        HOW TO PLAY
+    </div>
+
+    <div class="instructionCards">
+
+        <div class="instructionCard">
+
+            <div class="instructionIcon">
+                ↔️
+            </div>
+
+            <div class="instructionBig">
+                TILT
+            </div>
+
+            Tilt your phone<br>
+            LEFT / RIGHT<br>
+            to move.
+
+        </div>
 
 
-  <div id="help">
-    <b>A/D or ←/→</b> Move |
-    <b>SPACE</b> Flat |
-    <b>W / ↑</b> Topspin |
-    <b>S / ↓</b> Slice
-  </div>
+        <div class="instructionCard">
+
+            <div class="instructionIcon">
+                🎾
+            </div>
+
+            <div class="instructionBig">
+                SWING
+            </div>
+
+            Swing your phone<br>
+            or press SWING<br>
+            to hit the ball.
+
+        </div>
+
+    </div>
+
+    <div id="countdown">
+        GET READY
+    </div>
+
+</div>
 
 
-  <div id="controls">
+<div id="splitDivider"></div>
+
+
+<!-- =========================
+     HUD
+========================= -->
+
+<div id="hud">
+
+    <div id="title">
+        🎾 RALLY RIVALS
+    </div>
+
+    <div id="scoreboard">
+
+        <div
+            class="scoreBox"
+            id="score1"
+        >
+            PLAYER 1: 0
+        </div>
+
+        <div
+            class="scoreBox"
+            id="score2"
+        >
+            PLAYER 2: 0
+        </div>
+
+    </div>
+
+    <div id="status">
+        WAITING FOR PLAYERS
+    </div>
+
+</div>
+
+
+<div id="phoneStatus">
+    📱 WAITING FOR PLAYERS
+</div>
+
+
+<div id="help">
+    P1: A/D or ←/→ &nbsp; | &nbsp;
+    SPACE = Swing
+</div>
+
+
+<div id="controls">
 
     <button id="startBtn">
-      ▶ Start / Serve
+        START / SERVE
     </button>
 
     <button id="resetBtn">
-      ↻ Reset Match
+        RESET MATCH
     </button>
 
-  </div>
+</div>
 
 
-  <script type="module">
+<script type="module">
 
-    import * as THREE from
-      "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js";
+import * as THREE from
+"https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js";
 
 
-    // ============================================================
-    // SCENE
-    // ============================================================
+/* =========================================================
+   SCENE
+========================================================= */
 
-    const scene =
-      new THREE.Scene();
+const scene =
+    new THREE.Scene();
 
-    scene.background =
-      new THREE.Color(0x0a1526);
+scene.background =
+    new THREE.Color(0x0a1526);
 
-    scene.fog =
-      new THREE.FogExp2(
+scene.fog =
+    new THREE.Fog(
         0x0a1526,
-        0.015
-      );
+        35,
+        100
+    );
 
 
-    const camera =
-      new THREE.PerspectiveCamera(
+/* =========================================================
+   CAMERAS
+========================================================= */
+
+const camera1 =
+    new THREE.PerspectiveCamera(
         45,
-        window.innerWidth /
+        (window.innerWidth / 2) /
         window.innerHeight,
         0.1,
         120
-      );
-
-    camera.position.set(
-      0,
-      13,
-      20
     );
 
-    camera.lookAt(
-      0,
-      0,
-      -1
+camera1.position.set(
+    0,
+    8,
+    18
+);
+
+camera1.lookAt(
+    0,
+    1,
+    0
+);
+
+
+const camera2 =
+    new THREE.PerspectiveCamera(
+        45,
+        (window.innerWidth / 2) /
+        window.innerHeight,
+        0.1,
+        120
     );
 
+camera2.position.set(
+    0,
+    8,
+    -18
+);
 
-    const renderer =
-      new THREE.WebGLRenderer({
+camera2.lookAt(
+    0,
+    1,
+    0
+);
+
+
+/* =========================================================
+   RENDERER
+========================================================= */
+
+const renderer =
+    new THREE.WebGLRenderer({
         antialias: true
-      });
+    });
 
-    renderer.setSize(
-      window.innerWidth,
-      window.innerHeight
-    );
-
-    renderer.setPixelRatio(
-      Math.min(
+renderer.setPixelRatio(
+    Math.min(
         window.devicePixelRatio,
         2
-      )
-    );
+    )
+);
 
-    renderer.shadowMap.enabled =
-      true;
+renderer.setSize(
+    window.innerWidth,
+    window.innerHeight
+);
 
-    renderer.shadowMap.type =
-      THREE.PCFSoftShadowMap;
+renderer.shadowMap.enabled = true;
 
-    document.body.appendChild(
-      renderer.domElement
-    );
+renderer.shadowMap.type =
+    THREE.PCFSoftShadowMap;
 
+renderer.autoClear = false;
 
-    scene.add(
-      new THREE.HemisphereLight(
-        0xb1e8ff,
-        0x152218,
-        1.2
-      )
-    );
+document.body.appendChild(
+    renderer.domElement
+);
 
 
-    const sun =
-      new THREE.DirectionalLight(
+/* =========================================================
+   LIGHTING
+========================================================= */
+
+const ambientLight =
+    new THREE.AmbientLight(
         0xffffff,
-        2.2
-      );
-
-    sun.position.set(
-      -12,
-      25,
-      12
+        1.8
     );
 
-    sun.castShadow =
-      true;
-
-    sun.shadow.mapSize.set(
-      2048,
-      2048
-    );
-
-    scene.add(
-      sun
-    );
+scene.add(ambientLight);
 
 
-    // ============================================================
-    // MATERIALS
-    // ============================================================
-
-    const mat = (
-      color,
-      roughness = 0.7
-    ) =>
-      new THREE.MeshStandardMaterial({
-        color,
-        roughness
-      });
-
-
-    const courtMat =
-      mat(
-        0x1d6a59,
-        0.6
-      );
-
-    const borderMat =
-      mat(
-        0x13382f,
-        0.8
-      );
-
-    const wallMat =
-      mat(
-        0x111c2e,
-        0.9
-      );
-
-    const whiteMat =
-      mat(
+const sun =
+    new THREE.DirectionalLight(
         0xffffff,
-        0.4
-      );
+        2.5
+    );
+
+sun.position.set(
+    10,
+    20,
+    10
+);
+
+sun.castShadow = true;
+
+sun.shadow.mapSize.width = 2048;
+sun.shadow.mapSize.height = 2048;
+
+scene.add(sun);
 
 
-    function addBox(
-      w,
-      h,
-      d,
-      material,
-      x,
-      y,
-      z
-    ) {
+/* =========================================================
+   MATERIALS
+========================================================= */
 
-      const mesh =
-        new THREE.Mesh(
-          new THREE.BoxGeometry(
-            w,
-            h,
-            d
-          ),
-          material
+const courtMaterial =
+    new THREE.MeshStandardMaterial({
+        color: 0x146b72,
+        roughness: 0.8
+    });
+
+const lineMaterial =
+    new THREE.MeshBasicMaterial({
+        color: 0xffffff
+    });
+
+const netMaterial =
+    new THREE.MeshStandardMaterial({
+        color: 0xe6e6e6,
+        roughness: 0.8
+    });
+
+const playerMaterial =
+    new THREE.MeshStandardMaterial({
+        color: 0x2196f3,
+        roughness: 0.65
+    });
+
+const player2Material =
+    new THREE.MeshStandardMaterial({
+        color: 0xff4d6d,
+        roughness: 0.65
+    });
+
+const racketMaterial =
+    new THREE.MeshStandardMaterial({
+        color: 0xffff00,
+        roughness: 0.4
+    });
+
+const ballMaterial =
+    new THREE.MeshStandardMaterial({
+        color: 0xffff66,
+        roughness: 0.4
+    });
+
+
+/* =========================================================
+   COURT
+========================================================= */
+
+const courtGeometry =
+    new THREE.BoxGeometry(
+        12,
+        0.3,
+        24
+    );
+
+const court =
+    new THREE.Mesh(
+        courtGeometry,
+        courtMaterial
+    );
+
+court.position.y = -0.15;
+
+court.receiveShadow = true;
+
+scene.add(court);
+
+
+/* =========================================================
+   COURT LINES
+========================================================= */
+
+function createLine(
+    x,
+    y,
+    z,
+    width,
+    depth
+) {
+
+    const geometry =
+        new THREE.BoxGeometry(
+            width,
+            0.03,
+            depth
         );
 
-      mesh.position.set(
+    const line =
+        new THREE.Mesh(
+            geometry,
+            lineMaterial
+        );
+
+    line.position.set(
         x,
         y,
         z
-      );
-
-      mesh.receiveShadow =
-        true;
-
-      mesh.castShadow =
-        true;
-
-      scene.add(
-        mesh
-      );
-
-      return mesh;
-    }
-
-
-    // ============================================================
-    // COURT
-    // ============================================================
-
-    addBox(
-      80,
-      0.1,
-      100,
-      mat(0x0c141c),
-      0,
-      -0.3,
-      0
     );
 
-
-    addBox(
-      24,
-      0.2,
-      40,
-      borderMat,
-      0,
-      -0.1,
-      0
-    );
-
-
-    addBox(
-      10.97,
-      0.22,
-      23.77,
-      courtMat,
-      0,
-      -0.09,
-      0
-    );
-
-
-    // Walls
-
-    addBox(
-      40,
-      4,
-      1,
-      wallMat,
-      0,
-      1.8,
-      -25
-    );
-
-
-    addBox(
-      40,
-      4,
-      1,
-      wallMat,
-      0,
-      1.8,
-      25
-    );
-
-
-    addBox(
-      1,
-      4,
-      51,
-      wallMat,
-      -20,
-      1.8,
-      0
-    );
-
-
-    addBox(
-      1,
-      4,
-      51,
-      wallMat,
-      20,
-      1.8,
-      0
-    );
-
-
-    // Fence
-
-    const wireframeGeom =
-      new THREE.BoxGeometry(
-        36,
-        3,
-        46
-      );
-
-
-    const fence =
-      new THREE.Mesh(
-        wireframeGeom,
-        new THREE.MeshBasicMaterial({
-          color: 0x223548,
-          wireframe: true
-        })
-      );
-
-
-    fence.position.y =
-      1.5;
-
-
-    scene.add(
-      fence
-    );
-
-
-    // ============================================================
-    // COURT LINES
-    // ============================================================
-
-    function addLine(
-      x1,
-      z1,
-      x2,
-      z2
-    ) {
-
-      const geom =
-        new THREE.BufferGeometry()
-          .setFromPoints([
-            new THREE.Vector3(
-              x1,
-              0.05,
-              z1
-            ),
-
-            new THREE.Vector3(
-              x2,
-              0.05,
-              z2
-            )
-          ]);
-
-
-      scene.add(
-        new THREE.Line(
-          geom,
-          new THREE.LineBasicMaterial({
-            color: 0xffffff
-          })
-        )
-      );
-    }
-
-
-    addLine(
-      -5.48,
-      -11.88,
-      5.48,
-      -11.88
-    );
-
-
-    addLine(
-      -5.48,
-      11.88,
-      5.48,
-      11.88
-    );
-
-
-    addLine(
-      -5.48,
-      -11.88,
-      -5.48,
-      11.88
-    );
-
-
-    addLine(
-      5.48,
-      -11.88,
-      5.48,
-      11.88
-    );
-
-
-    addLine(
-      -4.11,
-      -11.88,
-      -4.11,
-      11.88
-    );
-
-
-    addLine(
-      4.11,
-      -11.88,
-      4.11,
-      11.88
-    );
-
-
-    addLine(
-      -4.11,
-      -6.4,
-      4.11,
-      -6.4
-    );
-
-
-    addLine(
-      -4.11,
-      6.4,
-      4.11,
-      6.4
-    );
-
-
-    addLine(
-      0,
-      -6.4,
-      0,
-      6.4
-    );
-
-
-    addLine(
-      0,
-      -11.88,
-      0,
-      -11.58
-    );
-
-
-    addLine(
-      0,
-      11.58,
-      0,
-      11.88
-    );
-
-
-    // ============================================================
-    // NET
-    // ============================================================
-
-    const netMesh =
-      addBox(
-        11.2,
-        0.95,
-        0.04,
-        mat(
-          0x1f3330
-        ),
-        0,
-        0.55,
-        0
-      );
-
-
-    netMesh.material.transparent =
-      true;
-
-    netMesh.material.opacity =
-      0.65;
-
-
-    addBox(
-      11.3,
-      0.06,
-      0.06,
-      whiteMat,
-      0,
-      1.02,
-      0
-    );
-
-
-    // ============================================================
-    // BALL SHADOW
-    // ============================================================
-
-    const shadowTarget =
-      new THREE.Mesh(
-        new THREE.RingGeometry(
-          0.1,
-          0.28,
-          16
-        ).rotateX(
-          -Math.PI / 2
-        ),
-
-        new THREE.MeshBasicMaterial({
-          color: 0x000000,
-          transparent: true,
-          opacity: 0.5
-        })
-      );
-
-
-    shadowTarget.position.y =
-      0.03;
-
-
-    scene.add(
-      shadowTarget
-    );
-
-
-    // ============================================================
-    // RACKET
-    // ============================================================
-
-    function createProRacket(
-      frameColor,
-      gripColor
-    ) {
-
-      const racket =
-        new THREE.Group();
-
-
-      const handle =
-        new THREE.Mesh(
-          new THREE.CylinderGeometry(
-            0.025,
-            0.03,
-            0.5,
-            12
-          ),
-          mat(
-            gripColor,
-            0.9
-          )
-        );
-
-
-      handle.position.y =
-        -0.25;
-
-
-      handle.castShadow =
-        true;
-
-
-      racket.add(
-        handle
-      );
-
-
-      const frameMat =
-        mat(
-          frameColor,
-          0.3
-        );
-
-
-      const neckLeft =
-        new THREE.Mesh(
-          new THREE.CylinderGeometry(
-            0.012,
-            0.012,
-            0.22
-          ),
-          frameMat
-        );
-
-
-      neckLeft.position.set(
-        -0.035,
-        0.07,
-        0
-      );
-
-
-      neckLeft.rotation.z =
-        -0.3;
-
-
-      racket.add(
-        neckLeft
-      );
-
-
-      const neckRight =
-        neckLeft.clone();
-
-
-      neckRight.position.x =
-        0.035;
-
-
-      neckRight.rotation.z =
-        0.3;
-
-
-      racket.add(
-        neckRight
-      );
-
-
-      const frameRim =
-        new THREE.Mesh(
-          new THREE.TorusGeometry(
-            0.22,
-            0.018,
-            10,
-            32
-          ),
-          frameMat
-        );
-
-
-      frameRim.scale.set(
-        0.88,
+    scene.add(line);
+
+    return line;
+}
+
+
+/* sidelines */
+
+createLine(
+    -5.4,
+    0.02,
+    0,
+    0.12,
+    23
+);
+
+createLine(
+    5.4,
+    0.02,
+    0,
+    0.12,
+    23
+);
+
+
+/* baseline */
+
+createLine(
+    0,
+    0.02,
+    11,
+    10.8,
+    0.12
+);
+
+createLine(
+    0,
+    0.02,
+    -11,
+    10.8,
+    0.12
+);
+
+
+/* center line */
+
+createLine(
+    0,
+    0.02,
+    0,
+    0.12,
+    23
+);
+
+
+/* service lines */
+
+createLine(
+    0,
+    0.02,
+    5.5,
+    10.8,
+    0.08
+);
+
+createLine(
+    0,
+    0.02,
+    -5.5,
+    10.8,
+    0.08
+);
+
+
+/* =========================================================
+   NET
+========================================================= */
+
+const netGeometry =
+    new THREE.BoxGeometry(
+        10.8,
         1.2,
-        1.0
-      );
+        0.12
+    );
+
+const net =
+    new THREE.Mesh(
+        netGeometry,
+        netMaterial
+    );
+
+net.position.set(
+    0,
+    0.6,
+    0
+);
+
+net.castShadow = true;
+
+scene.add(net);
 
 
-      frameRim.position.y =
-        0.35;
+/* =========================================================
+   PLAYER CREATION
+========================================================= */
 
+function createPlayer(
+    material,
+    isFacingAway
+) {
 
-      frameRim.castShadow =
-        true;
-
-
-      racket.add(
-        frameRim
-      );
-
-
-      const stringGrid =
+    const group =
         new THREE.Group();
 
 
-      const stringMat =
-        new THREE.MeshBasicMaterial({
-          color: 0xeeeeee,
-          transparent: true,
-          opacity: 0.5
-        });
+    /* body */
 
-
-      for (
-        let i = -0.12;
-        i <= 0.12;
-        i += 0.04
-      ) {
-
-        const vString =
-          new THREE.Mesh(
-            new THREE.CylinderGeometry(
-              0.002,
-              0.002,
-              0.48
+    const body =
+        new THREE.Mesh(
+            new THREE.CapsuleGeometry(
+                0.45,
+                1.0,
+                4,
+                8
             ),
-            stringMat
-          );
-
-
-        vString.position.set(
-          i,
-          0.35,
-          0
+            material
         );
 
+    body.position.y = 1.15;
 
-        stringGrid.add(
-          vString
-        );
-      }
+    body.castShadow = true;
+
+    group.add(body);
 
 
-      for (
-        let j = 0.18;
-        j <= 0.52;
-        j += 0.05
-      ) {
+    /* head */
 
-        const hString =
-          new THREE.Mesh(
-            new THREE.CylinderGeometry(
-              0.002,
-              0.002,
-              0.34
+    const head =
+        new THREE.Mesh(
+            new THREE.SphereGeometry(
+                0.38,
+                16,
+                16
             ),
-            stringMat
-          );
-
-
-        hString.position.set(
-          0,
-          j,
-          0
+            material
         );
 
+    head.position.y = 2.05;
 
-        hString.rotation.z =
-          Math.PI / 2;
+    head.castShadow = true;
+
+    group.add(head);
 
 
-        stringGrid.add(
-          hString
+    /* legs */
+
+    const legGeometry =
+        new THREE.CapsuleGeometry(
+            0.13,
+            0.7,
+            4,
+            8
         );
-      }
+
+    const leg1 =
+        new THREE.Mesh(
+            legGeometry,
+            material
+        );
+
+    const leg2 =
+        new THREE.Mesh(
+            legGeometry,
+            material
+        );
+
+    leg1.position.set(
+        -0.18,
+        0.45,
+        0
+    );
+
+    leg2.position.set(
+        0.18,
+        0.45,
+        0
+    );
+
+    leg1.castShadow = true;
+    leg2.castShadow = true;
+
+    group.add(leg1);
+    group.add(leg2);
 
 
-      racket.add(
-        stringGrid
-      );
+    /* racket */
 
-
-      return racket;
-    }
-
-
-    // ============================================================
-    // PLAYER
-    // ============================================================
-
-    function createProPlayer(
-      shirtColor,
-      shortsColor,
-      skinColor,
-      accessoryColor,
-      isFacingAway = true
-    ) {
-
-      const playerGroup =
+    const racketGroup =
         new THREE.Group();
 
 
-      const skinMat =
-        mat(
-          skinColor,
-          0.8
-        );
-
-
-      const shirtMat =
-        mat(
-          shirtColor,
-          0.6
-        );
-
-
-      const shortsMat =
-        mat(
-          shortsColor,
-          0.7
-        );
-
-
-      const shoeMat =
-        mat(
-          0xffffff,
-          0.5
-        );
-
-
-      const torso =
+    const handle =
         new THREE.Mesh(
-          new THREE.CylinderGeometry(
-            0.36,
-            0.3,
-            0.95,
-            12
-          ),
-          shirtMat
+            new THREE.CylinderGeometry(
+                0.055,
+                0.055,
+                0.8,
+                8
+            ),
+            racketMaterial
         );
 
-
-      torso.position.y =
-        1.25;
-
-
-      torso.castShadow =
-        true;
-
-
-      playerGroup.add(
-        torso
-      );
-
-
-      const hips =
-        new THREE.Mesh(
-          new THREE.CylinderGeometry(
-            0.31,
-            0.33,
-            0.4,
-            12
-          ),
-          shortsMat
-        );
-
-
-      hips.position.y =
-        0.8;
-
-
-      hips.castShadow =
-        true;
-
-
-      playerGroup.add(
-        hips
-      );
-
-
-      const headGroup =
-        new THREE.Group();
-
-
-      headGroup.position.y =
-        1.98;
-
-
-      const head =
-        new THREE.Mesh(
-          new THREE.SphereGeometry(
-            0.22,
-            16,
-            16
-          ),
-          skinMat
-        );
-
-
-      head.castShadow =
-        true;
-
-
-      headGroup.add(
-        head
-      );
-
-
-      const headband =
-        new THREE.Mesh(
-          new THREE.TorusGeometry(
-            0.21,
-            0.035,
-            8,
-            20
-          ),
-          mat(
-            accessoryColor,
-            0.5
-          )
-        );
-
-
-      headband.rotation.x =
+    handle.rotation.z =
         Math.PI / 2;
 
-
-      headband.position.y =
-        0.05;
+    handle.position.x = 0.55;
 
 
-      headGroup.add(
-        headband
-      );
-
-
-      playerGroup.add(
-        headGroup
-      );
-
-
-      // Legs
-
-      const legGeom =
-        new THREE.CylinderGeometry(
-          0.09,
-          0.075,
-          0.62,
-          10
+    const racketHead =
+        new THREE.Mesh(
+            new THREE.TorusGeometry(
+                0.38,
+                0.05,
+                8,
+                20
+            ),
+            racketMaterial
         );
 
+    racketHead.rotation.y =
+        Math.PI / 2;
 
-      legGeom.translate(
+    racketHead.position.set(
+        0.95,
         0,
-        -0.31,
         0
-      );
+    );
 
 
-      const leftLegGroup =
-        new THREE.Group();
+    racketGroup.add(handle);
+    racketGroup.add(racketHead);
 
-
-      leftLegGroup.position.set(
-        -0.15,
-        0.64,
-        0
-      );
-
-
-      const leftLeg =
-        new THREE.Mesh(
-          legGeom,
-          skinMat
-        );
-
-
-      leftLegGroup.add(
-        leftLeg
-      );
-
-
-      const leftShoe =
-        new THREE.Mesh(
-          new THREE.BoxGeometry(
-            0.15,
-            0.13,
-            0.3
-          ),
-          shoeMat
-        );
-
-
-      leftShoe.position.set(
+    racketGroup.position.set(
         0,
-        -0.58,
-        isFacingAway
-          ? -0.05
-          : 0.05
-      );
-
-
-      leftLegGroup.add(
-        leftShoe
-      );
-
-
-      playerGroup.add(
-        leftLegGroup
-      );
-
-
-      const rightLegGroup =
-        new THREE.Group();
-
-
-      rightLegGroup.position.set(
-        0.15,
-        0.64,
+        1.2,
         0
-      );
+    );
 
+    group.add(racketGroup);
 
-      const rightLeg =
-        new THREE.Mesh(
-          legGeom,
-          skinMat
-        );
 
+    if (isFacingAway) {
 
-      rightLegGroup.add(
-        rightLeg
-      );
+        group.rotation.y =
+            Math.PI;
 
-
-      const rightShoe =
-        leftShoe.clone();
-
-
-      rightShoe.position.set(
-        0,
-        -0.58,
-        isFacingAway
-          ? -0.05
-          : 0.05
-      );
-
-
-      rightLegGroup.add(
-        rightShoe
-      );
-
-
-      playerGroup.add(
-        rightLegGroup
-      );
-
-
-      // Racket arm
-
-      const armPivot =
-        new THREE.Group();
-
-
-      armPivot.position.set(
-        0.38,
-        1.5,
-        0
-      );
-
-
-      const upperArm =
-        new THREE.Mesh(
-          new THREE.CylinderGeometry(
-            0.07,
-            0.06,
-            0.45
-          ),
-          shirtMat
-        );
-
-
-      upperArm.position.set(
-        0.12,
-        -0.15,
-        0
-      );
-
-
-      upperArm.rotation.z =
-        -0.7;
-
-
-      armPivot.add(
-        upperArm
-      );
-
-
-      const forearm =
-        new THREE.Mesh(
-          new THREE.CylinderGeometry(
-            0.06,
-            0.05,
-            0.42
-          ),
-          skinMat
-        );
-
-
-      forearm.position.set(
-        0.32,
-        -0.32,
-        -0.12
-      );
-
-
-      forearm.rotation.x =
-        -Math.PI / 3;
-
-
-      forearm.rotation.y =
-        0.3;
-
-
-      armPivot.add(
-        forearm
-      );
-
-
-      const hand =
-        new THREE.Mesh(
-          new THREE.SphereGeometry(
-            0.06,
-            8,
-            8
-          ),
-          skinMat
-        );
-
-
-      hand.position.set(
-        0.36,
-        -0.48,
-        -0.28
-      );
-
-
-      armPivot.add(
-        hand
-      );
-
-
-      const racket =
-        createProRacket(
-          0xd22222,
-          0x111111
-        );
-
-
-      racket.position.set(
-        0.36,
-        -0.48,
-        -0.28
-      );
-
-
-      racket.rotation.set(
-        Math.PI / 3,
-        -Math.PI / 6,
-        -Math.PI / 4
-      );
-
-
-      armPivot.add(
-        racket
-      );
-
-
-      playerGroup.add(
-        armPivot
-      );
-
-
-      // Left arm
-
-      const leftArmPivot =
-        new THREE.Group();
-
-
-      leftArmPivot.position.set(
-        -0.38,
-        1.5,
-        0
-      );
-
-
-      const leftArm =
-        new THREE.Mesh(
-          new THREE.CylinderGeometry(
-            0.06,
-            0.05,
-            0.75
-          ),
-          skinMat
-        );
-
-
-      leftArm.position.set(
-        -0.04,
-        -0.32,
-        0
-      );
-
-
-      leftArm.rotation.z =
-        0.25;
-
-
-      leftArmPivot.add(
-        leftArm
-      );
-
-
-      playerGroup.add(
-        leftArmPivot
-      );
-
-
-      if (!isFacingAway) {
-
-        playerGroup.rotation.y =
-          Math.PI;
-      }
-
-
-      scene.add(
-        playerGroup
-      );
-
-
-      return {
-        group: playerGroup,
-        torso,
-        armPivot,
-        leftArmPivot,
-        leftLegGroup,
-        rightLegGroup,
-        racket,
-        swingTimer: 0,
-        serveTimer: 0
-      };
     }
 
 
-    const player1 =
-      createProPlayer(
-        0x1976d2,
-        0xffffff,
-        0xd2a679,
-        0xffeb3b,
-        true
-      );
+    group.userData.racket =
+        racketGroup;
+
+    group.userData.baseY = 0;
+
+    group.swingTimer = 0;
+    group.serveTimer = 0;
+
+    return group;
+}
 
 
-    player1.group.position.set(
-      0,
-      0,
-      9.5
-    );
+/* =========================================================
+   PLAYERS
+========================================================= */
 
-
-    const player2 =
-      createProPlayer(
-        0xe65100,
-        0x212121,
-        0x8d5524,
-        0x4caf50,
-        false
-      );
-
-
-    player2.group.position.set(
-      0,
-      0,
-      -9.5
-    );
-
-
-    // ============================================================
-    // BALL
-    // ============================================================
-
-    const ball =
-      new THREE.Mesh(
-        new THREE.SphereGeometry(
-          0.16,
-          16,
-          16
-        ),
-        mat(
-          0xd4f800,
-          0.2
+const player1 = {
+    group:
+        createPlayer(
+            playerMaterial,
+            false
         )
-      );
+};
+
+player1.group.position.set(
+    0,
+    0,
+    9.5
+);
+
+scene.add(
+    player1.group
+);
 
 
-    ball.castShadow =
-      true;
+const player2 = {
+    group:
+        createPlayer(
+            player2Material,
+            true
+        )
+};
+
+player2.group.position.set(
+    0,
+    0,
+    -9.5
+);
+
+scene.add(
+    player2.group
+);
 
 
-    scene.add(
-      ball
+/* =========================================================
+   BALL
+========================================================= */
+
+const ball =
+    new THREE.Mesh(
+        new THREE.SphereGeometry(
+            0.18,
+            16,
+            16
+        ),
+        ballMaterial
+    );
+
+ball.castShadow = true;
+
+scene.add(ball);
+
+
+const ballPos =
+    new THREE.Vector3(
+        0,
+        1.2,
+        8.8
+    );
+
+const ballVel =
+    new THREE.Vector3(
+        0,
+        0,
+        0
     );
 
 
-    // ============================================================
-    // GAME STATE
-    // ============================================================
+/* =========================================================
+   BALL SHADOW
+========================================================= */
 
-    let state =
-      "READY";
+const shadow =
+    new THREE.Mesh(
+        new THREE.CircleGeometry(
+            0.3,
+            16
+        ),
+        new THREE.MeshBasicMaterial({
+            color: 0x000000,
+            transparent: true,
+            opacity: 0.35
+        })
+    );
 
+shadow.rotation.x =
+    -Math.PI / 2;
 
-    let currentServer =
-      0;
+shadow.position.y =
+    0.02;
 
-
-    let p1Points = 0,
-        p2Points = 0;
-
-
-    let p1Games = 0,
-        p2Games = 0;
-
-
-    let p1Sets = 0,
-        p2Sets = 0;
-
-
-    let completedSets = [];
-
-
-    const tennisScores = [
-      "LOVE",
-      "15",
-      "30",
-      "40"
-    ];
+scene.add(shadow);
 
 
-    let ballPos =
-      new THREE.Vector3();
+/* =========================================================
+   GAME STATE
+========================================================= */
+
+let state = "READY";
+
+let currentServer = 0;
+
+let score1 = 0;
+let score2 = 0;
+
+let game1 = 0;
+let game2 = 0;
+
+let set1 = 0;
+let set2 = 0;
+
+let lastHitBy = 0;
+
+let bounceCount = 0;
+
+let matchStarted = false;
 
 
-    let ballVel =
-      new THREE.Vector3();
+/* =========================================================
+   PHONE / WEBSOCKET
+========================================================= */
+
+let phoneMove = 0;
+let phoneMove2 = 0;
+
+let phoneConnected = false;
+let phone2Connected = false;
+
+let lastPhoneSwing = 0;
+let lastPhoneSwing2 = 0;
 
 
-    let ballSpin = {
-      topspin: 0
-    };
-
-
-    let bounceCount =
-      0;
-
-
-    let lastHitBy =
-      -1;
-
-
-    let moveDir =
-      0;
-
-
-    let animTime =
-      0;
-
-
-    // ============================================================
-    // PHONE CONTROL VARIABLES
-    // ============================================================
-
-    let phoneMove =
-      0;
-
-
-    let phoneConnected =
-      false;
-
-
-    let lastPhoneSwing =
-      0;
-
-
-    // ============================================================
-    // PHONE WEBSOCKET
-    // ============================================================
-
-    const phoneStatus =
-      document.getElementById(
+const phoneStatus =
+    document.getElementById(
         "phoneStatus"
-      );
+    );
+
+const lobbyScreen =
+    document.getElementById(
+        "lobbyScreen"
+    );
+
+const instructionScreen =
+    document.getElementById(
+        "instructionScreen"
+    );
+
+const player1Status =
+    document.getElementById(
+        "player1Status"
+    );
+
+const player2Status =
+    document.getElementById(
+        "player2Status"
+    );
+
+const lobbyMessage =
+    document.getElementById(
+        "lobbyMessage"
+    );
+
+const countdown =
+    document.getElementById(
+        "countdown"
+    );
 
 
-    const protocol =
-      location.protocol ===
-      "https:"
+/* =========================================================
+   QR CODES
+========================================================= */
+
+const player1URL =
+    window.location.origin +
+    "/controller.html?player=1";
+
+const player2URL =
+    window.location.origin +
+    "/controller.html?player=2";
+
+
+new QRCode(
+    document.getElementById("qr1"),
+    {
+        text: player1URL,
+        width: 190,
+        height: 190
+    }
+);
+
+
+new QRCode(
+    document.getElementById("qr2"),
+    {
+        text: player2URL,
+        width: 190,
+        height: 190
+    }
+);
+
+
+/* =========================================================
+   GAME WEBSOCKET
+========================================================= */
+
+const protocol =
+    location.protocol === "https:"
         ? "wss:"
         : "ws:";
 
 
-    const phoneSocket =
-      new WebSocket(
+const phoneSocket =
+    new WebSocket(
         protocol +
         "//" +
         location.host
-      );
+    );
 
 
-    phoneSocket.onopen =
-      () => {
+phoneSocket.onopen = () => {
 
-        phoneConnected =
-          true;
-
-
-        phoneStatus.innerText =
-          "📱 Phone: Connected";
+    console.log(
+        "Game WebSocket connected"
+    );
 
 
-        console.log(
-          "Phone WebSocket connected"
-        );
-      };
+    /* IMPORTANT:
+       Tell server this is the GAME.
+    */
+
+    phoneSocket.send(
+        JSON.stringify({
+            type: "join",
+            role: "game"
+        })
+    );
+
+};
 
 
-    phoneSocket.onclose =
-      () => {
+phoneSocket.onclose = () => {
 
-        phoneConnected =
-          false;
+    console.log(
+        "Game WebSocket disconnected"
+    );
 
+    phoneConnected = false;
+    phone2Connected = false;
 
-        phoneMove =
-          0;
+    updateLobby(
+        false,
+        false
+    );
 
-
-        phoneStatus.innerText =
-          "📱 Phone: Disconnected";
-
-
-        console.log(
-          "Phone WebSocket disconnected"
-        );
-      };
+};
 
 
-    phoneSocket.onerror =
-      () => {
+phoneSocket.onerror = (error) => {
 
-        phoneConnected =
-          false;
+    console.error(
+        "Game WebSocket error",
+        error
+    );
 
-
-        phoneMove =
-          0;
-
-
-        phoneStatus.innerText =
-          "📱 Phone: Connection Error";
-      };
+};
 
 
-    phoneSocket.onmessage =
-      (event) => {
+phoneSocket.onmessage = (event) => {
 
-        try {
+    try {
 
-          const data =
+        const data =
             JSON.parse(
-              event.data
+                event.data
             );
 
 
-          // Server connection message
+        /* server connection */
 
-          if (
+        if (
             data.type ===
             "connected"
-          ) {
+        ) {
 
             return;
-          }
+
+        }
 
 
-          // ======================================================
-          // PHONE SWING
-          // ======================================================
+        /* lobby */
 
-          if (
+        if (
             data.type ===
-              "swing" &&
+            "lobby"
+        ) {
 
-            data.player ===
-              1
-          ) {
+            updateLobby(
+                data.player1,
+                data.player2
+            );
+
+            return;
+
+        }
+
+
+        /* PLAYER 1 MOVEMENT */
+
+        if (
+            data.type === "move" &&
+            data.player === 1
+        ) {
+
+            phoneMove =
+                THREE.MathUtils.clamp(
+                    Number(data.x) || 0,
+                    -1,
+                    1
+                );
+
+            return;
+
+        }
+
+
+        /* PLAYER 2 MOVEMENT */
+
+        if (
+            data.type === "move" &&
+            data.player === 2
+        ) {
+
+            phoneMove2 =
+                THREE.MathUtils.clamp(
+                    Number(data.x) || 0,
+                    -1,
+                    1
+                );
+
+            return;
+
+        }
+
+
+        /* PLAYER 1 SWING */
+
+        if (
+            data.type === "swing" &&
+            data.player === 1
+        ) {
 
             const now =
-              Date.now();
-
+                Date.now();
 
             if (
-              now -
-              lastPhoneSwing <
-              300
+                now -
+                lastPhoneSwing <
+                300
             ) {
-
-              return;
+                return;
             }
 
-
             lastPhoneSwing =
-              now;
+                now;
 
-
-            const power =
-              Number(
-                data.power
-              ) || 0;
-
-
-            console.log(
-              "PHONE SWING:",
-              power
-            );
-
-
-            // Every phone swing is
-            // currently a flat shot.
-
-            handleSwing(
-              "FLAT"
-            );
-
+            handleSwing(0);
 
             return;
-          }
+
+        }
 
 
-          // ======================================================
-          // PHONE MOVEMENT
-          // ======================================================
+        /* PLAYER 2 SWING */
 
-          if (
+        if (
+            data.type === "swing" &&
+            data.player === 2
+        ) {
+
+            const now =
+                Date.now();
+
+            if (
+                now -
+                lastPhoneSwing2 <
+                300
+            ) {
+                return;
+            }
+
+            lastPhoneSwing2 =
+                now;
+
+            handleSwing(1);
+
+            return;
+
+        }
+
+
+        /* PLAYER DISCONNECTED */
+
+        if (
             data.type ===
-              "move" &&
+            "player_disconnected"
+        ) {
 
-            data.player ===
-              1
-          ) {
+            if (
+                data.player === 1
+            ) {
+                phoneConnected =
+                    false;
+            }
 
-            handlePhoneMove(
-              data
+            if (
+                data.player === 2
+            ) {
+                phone2Connected =
+                    false;
+            }
+
+            updateLobby(
+                phoneConnected,
+                phone2Connected
             );
-
-
-            return;
-          }
 
         }
 
-        catch (error) {
+    }
+    catch (error) {
 
-          console.error(
-            "Invalid phone message:",
+        console.error(
+            "Invalid WebSocket data",
             error
-          );
-        }
-      };
-
-
-    // ============================================================
-    // PHONE MOVEMENT
-    // ============================================================
-
-    function handlePhoneMove(
-      data
-    ) {
-
-      if (
-        data.type !==
-          "move" ||
-
-        data.player !==
-          1
-      ) {
-
-        return;
-      }
-
-
-      const value =
-        Number(
-          data.x
         );
 
+    }
 
-      if (
-        Number.isFinite(
-          value
-        )
-      ) {
+};
 
-        phoneMove =
-          THREE.MathUtils.clamp(
-            value,
-            -1,
-            1
-          );
-      }
+
+/* =========================================================
+   LOBBY
+========================================================= */
+
+function updateLobby(
+    player1Joined,
+    player2Joined
+) {
+
+    phoneConnected =
+        player1Joined;
+
+    phone2Connected =
+        player2Joined;
+
+
+    if (player1Joined) {
+
+        player1Status.textContent =
+            "🟢 PLAYER 1 CONNECTED";
+
+        player1Status.className =
+            "joinStatus connected";
+
+    }
+    else {
+
+        player1Status.textContent =
+            "🟡 WAITING FOR PLAYER 1";
+
+        player1Status.className =
+            "joinStatus waiting";
+
     }
 
 
-    // ============================================================
-    // GAME SCORE
-    // ============================================================
+    if (player2Joined) {
 
-    function setStatus(
-      text
+        player2Status.textContent =
+            "🟢 PLAYER 2 CONNECTED";
+
+        player2Status.className =
+            "joinStatus connected";
+
+    }
+    else {
+
+        player2Status.textContent =
+            "🟡 WAITING FOR PLAYER 2";
+
+        player2Status.className =
+            "joinStatus waiting";
+
+    }
+
+
+    phoneStatus.textContent =
+        `📱 P1: ${
+            player1Joined
+                ? "CONNECTED"
+                : "WAITING"
+        } | P2: ${
+            player2Joined
+                ? "CONNECTED"
+                : "WAITING"
+        }`;
+
+
+    if (
+        player1Joined &&
+        player2Joined &&
+        !matchStarted
     ) {
 
-      document.getElementById(
+        startMatchIntro();
+
+    }
+
+}
+
+
+/* =========================================================
+   MATCH INTRO
+========================================================= */
+
+function startMatchIntro() {
+
+    matchStarted = true;
+
+    lobbyMessage.textContent =
+        "✓ BOTH PLAYERS CONNECTED";
+
+
+    setTimeout(() => {
+
+        lobbyScreen.style.display =
+            "none";
+
+        instructionScreen.style.display =
+            "flex";
+
+
+        let count = 3;
+
+        countdown.textContent =
+            count;
+
+
+        const timer =
+            setInterval(() => {
+
+                count--;
+
+
+                if (count > 0) {
+
+                    countdown.textContent =
+                        count;
+
+                }
+                else {
+
+                    clearInterval(timer);
+
+                    countdown.textContent =
+                        "GO!";
+
+
+                    setTimeout(() => {
+
+                        instructionScreen.style.display =
+                            "none";
+
+                        beginMatch();
+
+                    }, 600);
+
+                }
+
+            }, 1500);
+
+    }, 2500);
+
+}
+
+
+/* =========================================================
+   BEGIN MATCH
+========================================================= */
+
+function beginMatch() {
+
+    resetMatch();
+
+    state = "SERVING";
+
+    prepareServe();
+
+}
+
+
+/* =========================================================
+   STATUS
+========================================================= */
+
+function setStatus(text) {
+
+    document.getElementById(
         "status"
-      ).textContent =
-        text;
-    }
+    ).textContent = text;
+
+}
 
 
-    function updateScoreDisplay() {
+/* =========================================================
+   SCORE DISPLAY
+========================================================= */
 
-      if (
-        p1Points >= 3 &&
-        p2Points >= 3
-      ) {
+function updateScoreDisplay() {
 
-        if (
-          p1Points ===
-          p2Points
-        ) {
-
-          document.getElementById(
-            "p1Score"
-          ).textContent =
-            "DEUCE";
+    document.getElementById(
+        "score1"
+    ).textContent =
+        `PLAYER 1: ${scoreText(score1)}`;
 
 
-          document.getElementById(
-            "p2Score"
-          ).textContent =
-            "DEUCE";
+    document.getElementById(
+        "score2"
+    ).textContent =
+        `PLAYER 2: ${scoreText(score2)}`;
 
-        }
-
-        else if (
-          p1Points ===
-          p2Points + 1
-        ) {
-
-          document.getElementById(
-            "p1Score"
-          ).textContent =
-            "ADV";
+}
 
 
-          document.getElementById(
-            "p2Score"
-          ).textContent =
-            "40";
+function scoreText(score) {
 
-        }
+    if (score === 0) return "0";
+    if (score === 1) return "15";
+    if (score === 2) return "30";
+    if (score === 3) return "40";
 
-        else if (
-          p2Points ===
-          p1Points + 1
-        ) {
+    return "AD";
 
-          document.getElementById(
-            "p1Score"
-          ).textContent =
-            "40";
+}
 
 
-          document.getElementById(
-            "p2Score"
-          ).textContent =
-            "ADV";
-        }
+/* =========================================================
+   SERVE
+========================================================= */
 
-      }
+function prepareServe() {
 
-      else {
-
-        document.getElementById(
-          "p1Score"
-        ).textContent =
-          tennisScores[
-            Math.min(
-              p1Points,
-              3
-            )
-          ];
+    state = "SERVING";
 
 
-        document.getElementById(
-          "p2Score"
-        ).textContent =
-          tennisScores[
-            Math.min(
-              p2Points,
-              3
-            )
-          ];
-      }
-
-
-      document.getElementById(
-        "p1Games"
-      ).textContent =
-        `GAMES: ${p1Games}`;
-
-
-      document.getElementById(
-        "p2Games"
-      ).textContent =
-        `GAMES: ${p2Games}`;
-
-
-      let setsText =
-        `SETS: P1 [${p1Sets}] - [${p2Sets}] P2`;
-
-
-      if (
-        completedSets.length >
+    ballVel.set(
+        0,
+        0,
         0
-      ) {
-
-        setsText +=
-          ` (${completedSets.join(", ")})`;
-      }
+    );
 
 
-      document.getElementById(
-        "sets-summary"
-      ).textContent =
-        setsText;
-    }
-
-
-    function checkGameAndSetStatus(
-      winner
-    ) {
-
-      if (
-        winner === 0
-      )
-        p1Points++;
-
-      else
-        p2Points++;
-
-
-      if (
-        (
-          p1Points >= 4 &&
-          p1Points -
-          p2Points >= 2
-        ) ||
-
-        (
-          p2Points >= 4 &&
-          p2Points -
-          p1Points >= 2
-        )
-      ) {
-
-        if (
-          p1Points >
-          p2Points
-        )
-          p1Games++;
-
-        else
-          p2Games++;
-
-
-        p1Points =
-          0;
-
-        p2Points =
-          0;
-
-
-        setStatus(
-          p1Points >
-          p2Points
-            ? "GAME PLAYER 1!"
-            : "GAME PLAYER 2!"
-        );
-
-
-        if (
-          (
-            p1Games >= 6 &&
-            p1Games -
-            p2Games >= 2
-          ) ||
-
-          (
-            p2Games >= 6 &&
-            p2Games -
-            p1Games >= 2
-          )
-        ) {
-
-          completedSets.push(
-            `${p1Games}-${p2Games}`
-          );
-
-
-          if (
-            p1Games >
-            p2Games
-          )
-            p1Sets++;
-
-          else
-            p2Sets++;
-
-
-          p1Games =
-            0;
-
-          p2Games =
-            0;
-
-
-          if (
-            p1Sets === 3 ||
-            p2Sets === 3
-          ) {
-
-            state =
-              "MATCH_OVER";
-
-
-            setStatus(
-              p1Sets === 3
-                ? "🏆 MATCH WON BY PLAYER 1!"
-                : "🏆 MATCH WON BY PLAYER 2!"
-            );
-
-
-            updateScoreDisplay();
-
-            return;
-          }
-        }
-      }
-
-
-      updateScoreDisplay();
-    }
-
-
-    function awardPoint(
-      winner
-    ) {
-
-      state =
-        "POINT_OVER";
-
-
-      checkGameAndSetStatus(
-        winner
-      );
-
-
-      if (
-        state ===
-        "MATCH_OVER"
-      )
-        return;
-
-
-      currentServer =
+    if (
         currentServer === 0
-          ? 1
-          : 0;
-
-
-      setTimeout(
-        prepareServe,
-        1500
-      );
-    }
-
-
-    // ============================================================
-    // SERVE
-    // ============================================================
-
-    function prepareServe() {
-
-      state =
-        "SERVING";
-
-
-      bounceCount =
-        0;
-
-
-      lastHitBy =
-        currentServer;
-
-
-      ballSpin.topspin =
-        0;
-
-
-      if (
-        currentServer === 0
-      ) {
+    ) {
 
         player1.group.position.set(
-          2.0,
-          0,
-          9.8
+            2.0,
+            0,
+            9.8
         );
-
 
         ballPos.set(
-          2.0,
-          1.2,
-          8.8
+            2.0,
+            1.2,
+            8.8
         );
-
 
         setStatus(
-          "YOUR SERVE (PRESS START/PHONE)"
+            "PLAYER 1 SERVE — SWING!"
         );
 
-      }
-
-      else {
+    }
+    else {
 
         player2.group.position.set(
-          -2.0,
-          0,
-          -9.8
+            -2.0,
+            0,
+            -9.8
         );
-
 
         ballPos.set(
-          -2.0,
-          1.2,
-          -8.8
+            -2.0,
+            1.2,
+            -8.8
         );
-
 
         setStatus(
-          "AI SERVING..."
+            "PLAYER 2 SERVE — SWING!"
         );
 
+    }
 
-        setTimeout(
-          executeAIServe,
-          1000
-        );
-      }
+}
 
 
-      ballVel.set(
-        0,
-        0,
-        0
-      );
+function executeServe() {
 
-
-      ball.position.copy(
-        ballPos
-      );
+    if (
+        state !== "SERVING" ||
+        currentServer !== 0
+    ) {
+        return;
     }
 
 
-    function executeServe() {
-
-      if (
-        state !==
-          "SERVING" ||
-
-        currentServer !==
-          0
-      )
-        return;
-
-
-      player1.serveTimer =
+    player1.serveTimer =
         0.45;
 
 
-      state =
+    state =
         "IN_RALLY";
 
 
-      ballVel.set(
+    ballVel.set(
         -0.8,
         5.2,
         -13.5
-      );
+    );
 
 
-      ballSpin.topspin =
-        2.0;
+    lastHitBy = 0;
 
+    bounceCount = 0;
 
-      setStatus(
+    setStatus(
         "RALLY!"
-      );
+    );
+
+}
+
+
+function executePlayer2Serve() {
+
+    if (
+        state !== "SERVING" ||
+        currentServer !== 1
+    ) {
+        return;
     }
 
 
-    function executeAIServe() {
-
-      if (
-        state !==
-          "SERVING" ||
-
-        currentServer !==
-          1
-      )
-        return;
-
-
-      player2.serveTimer =
+    player2.serveTimer =
         0.45;
 
 
-      state =
+    state =
         "IN_RALLY";
 
 
-      ballVel.set(
+    ballVel.set(
         0.8,
         5.0,
         13.5
-      );
+    );
 
 
-      ballSpin.topspin =
-        2.0;
+    lastHitBy = 1;
 
+    bounceCount = 0;
 
-      setStatus(
+    setStatus(
         "RALLY!"
-      );
+    );
+
+}
+
+
+/* =========================================================
+   SWING
+========================================================= */
+
+function handleSwing(
+    playerNumber
+) {
+
+    /* serve */
+
+    if (
+        state === "SERVING"
+    ) {
+
+        if (
+            currentServer ===
+            playerNumber
+        ) {
+
+            if (
+                playerNumber === 0
+            ) {
+
+                executeServe();
+
+            }
+            else {
+
+                executePlayer2Serve();
+
+            }
+
+        }
+
+        return;
+
     }
 
 
-    // ============================================================
-    // SWING
-    // ============================================================
-
-    function handleSwing(
-      shotType = "FLAT"
+    if (
+        state !== "IN_RALLY"
     ) {
-
-      if (
-        state ===
-          "SERVING" &&
-
-        currentServer ===
-          0
-      ) {
-
-        executeServe();
-
         return;
-      }
+    }
 
 
-      if (
-        state !==
-        "IN_RALLY"
-      )
-        return;
+    const player =
+        playerNumber === 0
+            ? player1
+            : player2;
 
 
-      player1.swingTimer =
+    player.swingTimer =
         0.35;
 
 
-      const distanceZ =
+    const distanceZ =
         Math.abs(
-          ballPos.z -
-          player1.group.position.z
+            ballPos.z -
+            player.group.position.z
         );
 
 
-      const distanceX =
+    const distanceX =
         Math.abs(
-          ballPos.x -
-          player1.group.position.x
+            ballPos.x -
+            player.group.position.x
         );
 
 
-      if (
+    const ballComingTowardPlayer =
+        playerNumber === 0
+            ? ballVel.z > 0
+            : ballVel.z < 0;
+
+
+    if (
         distanceZ < 1.8 &&
-
         distanceX < 2.0 &&
-
         ballPos.y < 3.2 &&
-
-        ballVel.z > 0
-      ) {
+        ballComingTowardPlayer
+    ) {
 
         lastHitBy =
-          0;
+            playerNumber;
 
-
-        bounceCount =
-          0;
+        bounceCount = 0;
 
 
         const offset =
-          (
-            ballPos.x -
-            player1.group.position.x
-          ) *
-          0.95;
+            (
+                ballPos.x -
+                player.group.position.x
+            ) * 0.95;
 
 
         if (
-          shotType ===
-          "TOPSPIN"
+            playerNumber === 0
         ) {
 
-          ballVel.set(
-            offset * 2.2,
-            6.8,
-            -15.0
-          );
+            ballVel.set(
+                offset * 2.8,
+                7.0,
+                -10.5
+            );
 
-
-          ballSpin.topspin =
-            8.5;
-
-
-          setStatus(
-            "TOPSPIN DRIVE!"
-          );
+            setStatus(
+                "PLAYER 1 RETURN!"
+            );
 
         }
-
-        else if (
-          shotType ===
-          "SLICE"
-        ) {
-
-          ballVel.set(
-            offset * 1.4,
-            3.2,
-            -10.5
-          );
-
-
-          ballSpin.topspin =
-            -6.0;
-
-
-          setStatus(
-            "DROP SLICE!"
-          );
-
-        }
-
         else {
 
-          ballVel.set(
-            offset * 2.8,
-            4.6,
-            -14.2
-          );
+            ballVel.set(
+                offset * 2.8,
+                7.0,
+                10.5
+            );
 
+            setStatus(
+                "PLAYER 2 RETURN!"
+            );
 
-          ballSpin.topspin =
-            1.0;
-
-
-          setStatus(
-            "FLAT SMASH!"
-          );
         }
-      }
+
+    }
+
+}
+
+
+/* =========================================================
+   MOVEMENT ASSIST
+========================================================= */
+
+function getAssistedMove(
+    playerNumber,
+    inputMove
+) {
+
+    let combinedMove =
+        THREE.MathUtils.clamp(
+            inputMove,
+            -1,
+            1
+        );
+
+
+    if (
+        state !== "IN_RALLY"
+    ) {
+
+        return combinedMove;
+
     }
 
 
-    // ============================================================
-    // PHYSICS
-    // ============================================================
-
-    function updatePhysics(
-      delta
+    if (
+        Math.abs(combinedMove) <=
+        0.12
     ) {
 
-      if (
-        state !==
-        "IN_RALLY"
-      )
+        return combinedMove;
+
+    }
+
+
+    const player =
+        playerNumber === 0
+            ? player1
+            : player2;
+
+
+    const ballComingTowardPlayer =
+        playerNumber === 0
+            ? ballVel.z > 0
+            : ballVel.z < 0;
+
+
+    if (
+        !ballComingTowardPlayer
+    ) {
+
+        return combinedMove;
+
+    }
+
+
+    const targetZ =
+        playerNumber === 0
+            ? 8.2
+            : -8.2;
+
+
+    const distanceToTarget =
+        Math.abs(
+            targetZ -
+            ballPos.z
+        );
+
+
+    const speed =
+        Math.max(
+            Math.abs(ballVel.z),
+            0.001
+        );
+
+
+    let timeToTarget =
+        distanceToTarget /
+        speed;
+
+
+    timeToTarget =
+        THREE.MathUtils.clamp(
+            timeToTarget,
+            0,
+            0.8
+        );
+
+
+    let predictedX =
+        ballPos.x +
+        ballVel.x *
+        timeToTarget;
+
+
+    predictedX =
+        THREE.MathUtils.clamp(
+            predictedX,
+            -4.2,
+            4.2
+        );
+
+
+    const targetDifference =
+        predictedX -
+        player.group.position.x;
+
+
+    const targetDirection =
+        Math.sign(
+            targetDifference
+        );
+
+
+    const movementDirection =
+        Math.sign(
+            combinedMove
+        );
+
+
+    if (
+        targetDirection !== 0 &&
+        movementDirection ===
+            targetDirection
+    ) {
+
+        const distance =
+            Math.abs(
+                targetDifference
+            );
+
+
+        const assistStrength =
+            THREE.MathUtils.clamp(
+                distance / 2.0,
+                0,
+                1
+            );
+
+
+        const assistedMove =
+            targetDirection *
+            assistStrength;
+
+
+        combinedMove =
+            THREE.MathUtils.lerp(
+                combinedMove,
+                assistedMove,
+                0.95
+            );
+
+    }
+
+
+    return THREE.MathUtils.clamp(
+        combinedMove,
+        -1,
+        1
+    );
+
+}
+
+
+/* =========================================================
+   PHYSICS
+========================================================= */
+
+function updatePhysics(
+    delta
+) {
+
+    if (
+        state !== "IN_RALLY"
+    ) {
         return;
+    }
 
 
-      const gravity =
-        -9.81;
+    ballVel.y -=
+        9.8 * delta;
 
 
-      const magnusForceY =
-        -ballSpin.topspin *
-        0.85;
-
-
-      ballVel.y +=
-        (
-          gravity +
-          magnusForceY
-        ) *
-        delta;
-
-
-      ballPos.addScaledVector(
+    ballPos.addScaledVector(
         ballVel,
         delta
-      );
+    );
 
 
-      if (
-        ballPos.y <= 0.16
-      ) {
+    /* ground bounce */
 
-        ballPos.y =
-          0.16;
+    if (
+        ballPos.y <= 0.18 &&
+        ballVel.y < 0
+    ) {
 
+        ballPos.y = 0.18;
 
-        ballVel.y =
-          -ballVel.y *
-          (
-            ballSpin.topspin < 0
-              ? 0.65
-              : 0.78
-          );
-
-
-        ballVel.x *=
-          0.88;
-
-
-        ballVel.z *=
-          0.88 +
-          (
-            ballSpin.topspin *
-            0.01
-          );
-
-
-        ballSpin.topspin *=
-          0.3;
-
+        ballVel.y *= -0.72;
 
         bounceCount++;
 
 
-        const isOut =
-          Math.abs(
-            ballPos.x
-          ) > 5.2 ||
-
-          Math.abs(
-            ballPos.z
-          ) > 11.88;
-
-
         if (
-          isOut
+            bounceCount >= 2
         ) {
 
-          awardPoint(
-            lastHitBy === 0
-              ? 1
-              : 0
-          );
+            const winner =
+                lastHitBy === 0
+                    ? 1
+                    : 0;
 
-          return;
+            pointWon(winner);
+
+            return;
+
         }
 
-
-        if (
-          bounceCount >= 2
-        ) {
-
-          awardPoint(
-            lastHitBy
-          );
-
-          return;
-        }
-      }
-
-
-      if (
-        Math.abs(
-          ballPos.z
-        ) < 0.12 &&
-
-        ballPos.y <
-        0.98
-      ) {
-
-        ballVel.z =
-          -ballVel.z *
-          0.25;
-
-
-        ballVel.y =
-          1.2;
-
-
-        setStatus(
-          "NET FAULT!"
-        );
-      }
-
-
-      // ==========================================================
-      // AI
-      // ==========================================================
-
-      if (
-        ballVel.z < 0 &&
-        state ===
-        "IN_RALLY"
-      ) {
-
-        const targetX =
-          THREE.MathUtils.clamp(
-            ballPos.x,
-            -4.0,
-            4.0
-          );
-
-
-        const aiMoveDiff =
-          targetX -
-          player2.group.position.x;
-
-
-        player2.group.position.x +=
-          aiMoveDiff *
-          delta *
-          3.2;
-
-
-        if (
-          Math.abs(
-            ballPos.z -
-            player2.group.position.z
-          ) < 1.6 &&
-
-          ballPos.y < 3.0
-        ) {
-
-          player2.swingTimer =
-            0.35;
-
-
-          lastHitBy =
-            1;
-
-
-          bounceCount =
-            0;
-
-
-          const returnX =
-            (
-              Math.random() -
-              0.5
-            ) *
-            6.5;
-
-
-          ballVel.set(
-            returnX -
-            player2.group.position.x *
-            0.3,
-
-            4.5 +
-            Math.random() *
-            1.8,
-
-            13.0 +
-            Math.random() *
-            2
-          );
-
-
-          ballSpin.topspin =
-            2.0;
-
-
-          setStatus(
-            "AI RETURNED!"
-          );
-        }
-      }
-
-
-      if (
-        Math.abs(
-          ballPos.z
-        ) > 13.5
-      ) {
-
-        awardPoint(
-          lastHitBy
-        );
-      }
-
-
-      ball.position.copy(
-        ballPos
-      );
-
-
-      shadowTarget.position.set(
-        ballPos.x,
-        0.03,
-        ballPos.z
-      );
-
-
-      const shadowScale =
-        Math.max(
-          0.3,
-          1.0 -
-          ballPos.y *
-          0.12
-        );
-
-
-      shadowTarget.scale.set(
-        shadowScale,
-        shadowScale,
-        shadowScale
-      );
     }
 
 
-    // ============================================================
-    // CHARACTER ANIMATION
-    // ============================================================
+    /* net */
 
-    function animateCharacter(
-      player,
-      isMoving,
-      delta
+    if (
+        Math.abs(ballPos.z) <
+            0.15 &&
+        ballPos.y <
+            1.2 &&
+        ballVel.z !== 0
     ) {
 
-      if (
-        isMoving
-      ) {
+        ballVel.z *= -0.35;
 
-        const stride =
-          Math.sin(
-            animTime * 14
-          ) *
-          0.65;
+        ballVel.y =
+            Math.abs(ballVel.y) *
+            0.45;
 
-
-        player.leftLegGroup.rotation.x =
-          stride;
-
-
-        player.rightLegGroup.rotation.x =
-          -stride;
-
-      }
-
-      else {
-
-        player.leftLegGroup.rotation.x *=
-          0.8;
-
-
-        player.rightLegGroup.rotation.x *=
-          0.8;
-      }
-
-
-      player.torso.position.y =
-        1.25 +
-        Math.sin(
-          animTime * 4
-        ) *
-        0.02;
-
-
-      if (
-        player.swingTimer >
-        0
-      ) {
-
-        player.swingTimer -=
-          delta;
-
-
-        const progress =
-          (
-            0.35 -
-            player.swingTimer
-          ) /
-          0.35;
-
-
-        const swingAngle =
-          Math.sin(
-            progress *
-            Math.PI
-          );
-
-
-        player.armPivot.rotation.y =
-          -swingAngle *
-          2.2;
-
-
-        player.armPivot.rotation.x =
-          -swingAngle *
-          0.8;
-
-
-        player.torso.rotation.y =
-          swingAngle *
-          0.4;
-
-      }
-
-      else if (
-        player.serveTimer >
-        0
-      ) {
-
-        player.serveTimer -=
-          delta;
-
-
-        const progress =
-          (
-            0.45 -
-            player.serveTimer
-          ) /
-          0.45;
-
-
-        const serveAngle =
-          Math.sin(
-            progress *
-            Math.PI
-          );
-
-
-        player.armPivot.rotation.x =
-          -serveAngle *
-          2.5;
-
-
-        player.leftArmPivot.rotation.x =
-          serveAngle *
-          1.8;
-
-      }
-
-      else {
-
-        player.armPivot.rotation.set(
-          0,
-          0,
-          0
-        );
-
-
-        player.leftArmPivot.rotation.set(
-          0,
-          0,
-          0
-        );
-
-
-        player.torso.rotation.y =
-          0;
-      }
     }
 
 
-    // ============================================================
-    // RESET
-    // ============================================================
+    /* out of court */
 
-    function resetMatch() {
+    if (
+        Math.abs(ballPos.x) >
+            6 ||
+        Math.abs(ballPos.z) >
+            13
+    ) {
 
-      state =
-        "READY";
+        const winner =
+            lastHitBy === 0
+                ? 1
+                : 0;
 
+        pointWon(winner);
 
-      p1Points =
-        0;
+    }
 
-      p2Points =
-        0;
-
-
-      p1Games =
-        0;
-
-      p2Games =
-        0;
+}
 
 
-      p1Sets =
-        0;
+/* =========================================================
+   POINT
+========================================================= */
 
-      p2Sets =
-        0;
+function pointWon(
+    winner
+) {
 
-
-      completedSets =
-        [];
-
-
-      phoneMove =
-        0;
+    state =
+        "POINT";
 
 
-      updateScoreDisplay();
-
-
-      player1.group.position.set(
+    ballVel.set(
         0,
         0,
-        9.5
-      );
-
-
-      player2.group.position.set(
-        0,
-        0,
-        -9.5
-      );
-
-
-      ballPos.set(
-        0,
-        1,
         0
-      );
+    );
 
 
-      ball.position.copy(
-        ballPos
-      );
+    if (
+        winner === 0
+    ) {
 
+        score1++;
 
-      shadowTarget.position.set(
-        0,
-        0.03,
-        0
-      );
+    }
+    else {
 
+        score2++;
 
-      setStatus(
-        "PRESS START"
-      );
     }
 
 
-    // ============================================================
-    // KEYBOARD CONTROLS
-    // ============================================================
-
-    window.addEventListener(
-      "keydown",
-      (e) => {
-
-        if (
-          e.code ===
-            "KeyA" ||
-
-          e.code ===
-            "ArrowLeft"
-        ) {
-
-          moveDir =
-            -1;
-        }
+    updateScoreDisplay();
 
 
-        if (
-          e.code ===
-            "KeyD" ||
-
-          e.code ===
-            "ArrowRight"
-        ) {
-
-          moveDir =
-            1;
-        }
-
-
-        if (
-          e.code ===
-          "Space"
-        ) {
-
-          handleSwing(
-            "FLAT"
-          );
-        }
-
-
-        if (
-          e.code ===
-            "KeyW" ||
-
-          e.code ===
-            "ArrowUp"
-        ) {
-
-          handleSwing(
-            "TOPSPIN"
-          );
-        }
-
-
-        if (
-          e.code ===
-            "KeyS" ||
-
-          e.code ===
-            "ArrowDown"
-        ) {
-
-          handleSwing(
-            "SLICE"
-          );
-        }
-      }
+    setStatus(
+        `PLAYER ${
+            winner + 1
+        } WINS THE POINT`
     );
 
 
-    window.addEventListener(
-      "keyup",
-      (e) => {
-
-        if (
-          [
-            "KeyA",
-            "KeyD",
-            "ArrowLeft",
-            "ArrowRight"
-          ].includes(
-            e.code
-          )
-        ) {
-
-          moveDir =
-            0;
-        }
-      }
-    );
+    checkGame();
 
 
-    // ============================================================
-    // BUTTONS
-    // ============================================================
+    if (
+        state === "POINT"
+    ) {
 
-    document
-      .getElementById(
-        "startBtn"
-      )
-      .addEventListener(
-        "click",
-        () => {
+        currentServer =
+            winner;
 
-          if (
-            state ===
-            "READY"
-          ) {
+
+        setTimeout(() => {
 
             prepareServe();
 
-          }
+        }, 1200);
 
-          else if (
-            state ===
-            "SERVING"
-          ) {
+    }
 
-            executeServe();
-          }
-        }
-      );
+}
 
 
-    document
-      .getElementById(
-        "resetBtn"
-      )
-      .addEventListener(
-        "click",
-        resetMatch
-      );
+/* =========================================================
+   GAME / SET
+========================================================= */
+
+function checkGame() {
+
+    const winner1 =
+        score1 >= 4 &&
+        score1 - score2 >= 2;
+
+    const winner2 =
+        score2 >= 4 &&
+        score2 - score1 >= 2;
 
 
-    // ============================================================
-    // MAIN LOOP
-    // ============================================================
-
-    let lastTime =
-      performance.now();
-
-
-    function animate(
-      time
+    if (
+        !winner1 &&
+        !winner2
     ) {
-
-      requestAnimationFrame(
-        animate
-      );
-
-
-      const delta =
-        Math.min(
-          0.035,
-          (
-            time -
-            lastTime
-          ) / 1000
-        );
-
-
-      lastTime =
-        time;
-
-
-      animTime +=
-        delta;
-
-
-      // ==========================================================
-      // PLAYER 1 MOVEMENT
-      // ==========================================================
-
-      const prevX1 =
-        player1.group.position.x;
-
-
-      /*
-        Keyboard:
-
-        -1 = LEFT
-         0 = CENTER
-        +1 = RIGHT
-
-
-        Phone:
-
-        -1 = LEFT
-         0 = CENTER
-        +1 = RIGHT
-      */
-
-      let combinedMove =
-        moveDir +
-        phoneMove;
-
-
-      combinedMove =
-        THREE.MathUtils.clamp(
-          combinedMove,
-          -1,
-          1
-        );
-
-
-      player1.group.position.x =
-        THREE.MathUtils.clamp(
-          player1.group.position.x +
-          combinedMove *
-          delta *
-          5.5,
-
-          -4.5,
-          4.5
-        );
-
-
-      const isP1Moving =
-        Math.abs(
-          player1.group.position.x -
-          prevX1
-        ) > 0.001;
-
-
-      // ==========================================================
-      // AI MOVEMENT
-      // ==========================================================
-
-      const prevX2 =
-        player2.group.position.x;
-
-
-      const isP2Moving =
-        Math.abs(
-          player2.group.position.x -
-          prevX2
-        ) > 0.001;
-
-
-      // ==========================================================
-      // ANIMATION
-      // ==========================================================
-
-      animateCharacter(
-        player1,
-        isP1Moving,
-        delta
-      );
-
-
-      animateCharacter(
-        player2,
-        isP2Moving,
-        delta
-      );
-
-
-      // ==========================================================
-      // PHYSICS
-      // ==========================================================
-
-      updatePhysics(
-        delta
-      );
-
-
-      renderer.render(
-        scene,
-        camera
-      );
+        return;
     }
 
 
-    // ============================================================
-    // RESIZE
-    // ============================================================
+    if (
+        winner1
+    ) {
 
-    window.addEventListener(
-      "resize",
-      () => {
+        game1++;
 
-        camera.aspect =
-          window.innerWidth /
-          window.innerHeight;
+    }
+    else {
+
+        game2++;
+
+    }
 
 
-        camera.updateProjectionMatrix();
+    score1 = 0;
+    score2 = 0;
+
+
+    updateScoreDisplay();
+
+
+    if (
+        game1 >= 6 &&
+        game1 - game2 >= 2
+    ) {
+
+        set1++;
+
+        game1 = 0;
+        game2 = 0;
+
+        setStatus(
+            "PLAYER 1 WINS THE SET!"
+        );
+
+    }
+    else if (
+        game2 >= 6 &&
+        game2 - game1 >= 2
+    ) {
+
+        set2++;
+
+        game1 = 0;
+        game2 = 0;
+
+        setStatus(
+            "PLAYER 2 WINS THE SET!"
+        );
+
+    }
+
+
+    if (
+        set1 >= 3 ||
+        set2 >= 3
+    ) {
+
+        state = "MATCH_OVER";
+
+
+        const matchWinner =
+            set1 > set2
+                ? 1
+                : 2;
+
+
+        setStatus(
+            `PLAYER ${matchWinner} WINS THE MATCH!`
+        );
+
+
+        return;
+
+    }
+
+}
+
+
+/* =========================================================
+   RESET
+========================================================= */
+
+function resetMatch() {
+
+    score1 = 0;
+    score2 = 0;
+
+    game1 = 0;
+    game2 = 0;
+
+    set1 = 0;
+    set2 = 0;
+
+    currentServer = 0;
+
+    state = "READY";
+
+    ballVel.set(
+        0,
+        0,
+        0
+    );
+
+    ballPos.set(
+        0,
+        1.2,
+        8.8
+    );
+
+    player1.group.position.set(
+        0,
+        0,
+        9.5
+    );
+
+    player2.group.position.set(
+        0,
+        0,
+        -9.5
+    );
+
+    phoneMove = 0;
+    phoneMove2 = 0;
+
+    updateScoreDisplay();
+
+    setStatus(
+        "WAITING FOR SERVE"
+    );
+
+}
+
+
+/* =========================================================
+   KEYBOARD
+========================================================= */
+
+const keys = {};
+
+
+window.addEventListener(
+    "keydown",
+    (event) => {
+
+        keys[event.code] = true;
+
+
+        if (
+            event.code ===
+            "Space"
+        ) {
+
+            event.preventDefault();
+
+            handleSwing(0);
+
+        }
+
+    }
+);
+
+
+window.addEventListener(
+    "keyup",
+    (event) => {
+
+        keys[event.code] = false;
+
+    }
+);
+
+
+/* =========================================================
+   BUTTONS
+========================================================= */
+
+document
+    .getElementById("startBtn")
+    .addEventListener(
+        "click",
+        () => {
+
+            if (
+                state === "READY"
+            ) {
+
+                prepareServe();
+
+            }
+            else if (
+                state === "SERVING"
+            ) {
+
+                if (
+                    currentServer ===
+                    0
+                ) {
+
+                    executeServe();
+
+                }
+                else {
+
+                    executePlayer2Serve();
+
+                }
+
+            }
+
+        }
+    );
+
+
+document
+    .getElementById("resetBtn")
+    .addEventListener(
+        "click",
+        () => {
+
+            resetMatch();
+
+        }
+    );
+
+
+/* =========================================================
+   ANIMATION
+========================================================= */
+
+let lastTime =
+    performance.now();
+
+
+function animate(
+    currentTime
+) {
+
+    requestAnimationFrame(
+        animate
+    );
+
+
+    const delta =
+        Math.min(
+            (currentTime -
+                lastTime) /
+                1000,
+            0.05
+        );
+
+
+    lastTime =
+        currentTime;
+
+
+    /* =========================
+       PLAYER 1 MOVEMENT
+    ========================= */
+
+    const moveLeft1 =
+        keys["KeyA"] ||
+        keys["ArrowLeft"];
+
+    const moveRight1 =
+        keys["KeyD"] ||
+        keys["ArrowRight"];
+
+
+    let keyboardMove1 = 0;
+
+
+    if (moveLeft1) {
+
+        keyboardMove1 -= 1;
+
+    }
+
+    if (moveRight1) {
+
+        keyboardMove1 += 1;
+
+    }
+
+
+    let combinedMove1 =
+        keyboardMove1 +
+        phoneMove;
+
+
+    combinedMove1 =
+        THREE.MathUtils.clamp(
+            combinedMove1,
+            -1,
+            1
+        );
+
+
+    combinedMove1 =
+        getAssistedMove(
+            0,
+            combinedMove1
+        );
+
+
+    const previousX1 =
+        player1.group.position.x;
+
+
+    player1.group.position.x +=
+        combinedMove1 *
+        delta *
+        5.5;
+
+
+    player1.group.position.x =
+        THREE.MathUtils.clamp(
+            player1.group.position.x,
+            -4.5,
+            4.5
+        );
+
+
+    const moving1 =
+        Math.abs(
+            player1.group.position.x -
+            previousX1
+        ) > 0.001;
+
+
+    /* =========================
+       PLAYER 2 MOVEMENT
+    ========================= */
+
+    let keyboardMove2 = 0;
+
+
+    if (keys["KeyJ"]) {
+
+        keyboardMove2 -= 1;
+
+    }
+
+    if (keys["KeyL"]) {
+
+        keyboardMove2 += 1;
+
+    }
+
+
+    let combinedMove2 =
+        keyboardMove2 +
+        phoneMove2;
+
+
+    combinedMove2 =
+        THREE.MathUtils.clamp(
+            combinedMove2,
+            -1,
+            1
+        );
+
+
+    combinedMove2 =
+        getAssistedMove(
+            1,
+            combinedMove2
+        );
+
+
+    const previousX2 =
+        player2.group.position.x;
+
+
+    player2.group.position.x +=
+        combinedMove2 *
+        delta *
+        5.5;
+
+
+    player2.group.position.x =
+        THREE.MathUtils.clamp(
+            player2.group.position.x,
+            -4.5,
+            4.5
+        );
+
+
+    const moving2 =
+        Math.abs(
+            player2.group.position.x -
+            previousX2
+        ) > 0.001;
+
+
+    /* =========================
+       SWING ANIMATION
+    ========================= */
+
+    if (
+        player1.swingTimer > 0
+    ) {
+
+        player1.swingTimer -=
+            delta;
+
+        player1.group.userData.racket.rotation.z =
+            -1.1;
+
+    }
+    else {
+
+        player1.group.userData.racket.rotation.z =
+            0;
+
+    }
+
+
+    if (
+        player2.swingTimer > 0
+    ) {
+
+        player2.swingTimer -=
+            delta;
+
+        player2.group.userData.racket.rotation.z =
+            -1.1;
+
+    }
+    else {
+
+        player2.group.userData.racket.rotation.z =
+            0;
+
+    }
+
+
+    /* =========================
+       PLAYER BOB
+    ========================= */
+
+    const bobTime =
+        currentTime * 0.006;
+
+
+    if (moving1) {
+
+        player1.group.position.y =
+            Math.sin(
+                bobTime * 8
+            ) * 0.03;
+
+    }
+    else {
+
+        player1.group.position.y =
+            0;
+
+    }
+
+
+    if (moving2) {
+
+        player2.group.position.y =
+            Math.sin(
+                bobTime * 8
+            ) * 0.03;
+
+    }
+    else {
+
+        player2.group.position.y =
+            0;
+
+    }
+
+
+    /* =========================
+       PHYSICS
+    ========================= */
+
+    updatePhysics(
+        delta
+    );
+
+
+    /* =========================
+       BALL
+    ========================= */
+
+    ball.position.copy(
+        ballPos
+    );
+
+
+    shadow.position.x =
+        ballPos.x;
+
+    shadow.position.z =
+        ballPos.z;
+
+
+    const shadowScale =
+        THREE.MathUtils.clamp(
+            1 -
+                (ballPos.y / 8),
+            0.35,
+            1
+        );
+
+
+    shadow.scale.set(
+        shadowScale,
+        shadowScale,
+        shadowScale
+    );
+
+
+    /* =========================
+       SPLIT SCREEN
+    ========================= */
+
+    renderSplitScreen();
+
+}
+
+
+/* =========================================================
+   SPLIT SCREEN RENDER
+========================================================= */
+
+function renderSplitScreen() {
+
+    const width =
+        window.innerWidth;
+
+    const height =
+        window.innerHeight;
+
+    const halfWidth =
+        Math.floor(
+            width / 2
+        );
+
+
+    renderer.setClearColor(
+        0x0a1526,
+        1
+    );
+
+    renderer.clear();
+
+
+    renderer.setScissorTest(
+        true
+    );
+
+
+    /* PLAYER 1 */
+
+    renderer.setViewport(
+        0,
+        0,
+        halfWidth,
+        height
+    );
+
+    renderer.setScissor(
+        0,
+        0,
+        halfWidth,
+        height
+    );
+
+    renderer.render(
+        scene,
+        camera1
+    );
+
+
+    /* PLAYER 2 */
+
+    renderer.setViewport(
+        halfWidth,
+        0,
+        width - halfWidth,
+        height
+    );
+
+    renderer.setScissor(
+        halfWidth,
+        0,
+        width - halfWidth,
+        height
+    );
+
+    renderer.render(
+        scene,
+        camera2
+    );
+
+
+    renderer.setScissorTest(
+        false
+    );
+
+}
+
+
+/* =========================================================
+   RESIZE
+========================================================= */
+
+window.addEventListener(
+    "resize",
+    () => {
+
+        const halfWidth =
+            window.innerWidth / 2;
+
+
+        camera1.aspect =
+            halfWidth /
+            window.innerHeight;
+
+        camera1.updateProjectionMatrix();
+
+
+        camera2.aspect =
+            halfWidth /
+            window.innerHeight;
+
+        camera2.updateProjectionMatrix();
 
 
         renderer.setSize(
-          window.innerWidth,
-          window.innerHeight
+            window.innerWidth,
+            window.innerHeight
         );
-      }
-    );
+
+    }
+);
 
 
-    // ============================================================
-    // START
-    // ============================================================
+/* =========================================================
+   START
+========================================================= */
 
-    resetMatch();
+resetMatch();
 
+animate(
+    performance.now()
+);
 
-    animate(
-      performance.now()
-    );
-
-  </script>
+</script>
 
 </body>
 </html>
-

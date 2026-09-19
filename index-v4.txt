@@ -1,0 +1,3151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>3D Tennis Pro - Animated Players & 5-Set Match</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #090d12;
+      color: white;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    #hud {
+      position: fixed;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 5;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      background: rgba(0,0,0,0.82);
+      padding: 12px 24px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.7);
+      border: 1px solid rgba(255,255,255,0.15);
+      backdrop-filter: blur(6px);
+    }
+
+    .score-row {
+      display: flex;
+      gap: 25px;
+      align-items: center;
+    }
+
+    .score-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-width: 90px;
+    }
+
+    .player-label {
+      font-size: 11px;
+      letter-spacing: 1px;
+      opacity: 0.8;
+    }
+
+    .score {
+      font-size: 28px;
+      font-weight: bold;
+      color: #f2f35d;
+    }
+
+    #sets-summary {
+      font-size: 13px;
+      letter-spacing: 1px;
+      color: #e0e0e0;
+      background: rgba(255,255,255,0.1);
+      padding: 4px 12px;
+      border-radius: 6px;
+    }
+
+    #status {
+      font-size: 13px;
+      font-weight: 600;
+      color: #4deaea;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    #controls {
+      position: fixed;
+      bottom: 18px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 5;
+      display: flex;
+      gap: 10px;
+    }
+
+    button {
+      padding: 12px 22px;
+      border: 0;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+      background: #4deaea;
+      color: #10202a;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    }
+
+    button:hover {
+      background: #ffffff;
+      transform: translateY(-2px);
+    }
+
+    #help {
+      position: fixed;
+      top: 135px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 5;
+      background: rgba(0,0,0,0.6);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 11px;
+      text-align: center;
+      border: 1px solid rgba(255,255,255,0.15);
+      backdrop-filter: blur(4px);
+    }
+
+    #phoneStatus {
+      position: fixed;
+      top: 12px;
+      right: 15px;
+      z-index: 10;
+      background: rgba(0,0,0,0.75);
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      border: 1px solid rgba(255,255,255,0.15);
+    }
+  </style>
+</head>
+
+<body>
+
+  <div id="hud">
+
+    <div id="sets-summary">
+      SETS: P1 [0] - [0] P2
+    </div>
+
+    <div class="score-row">
+
+      <div class="score-box">
+        <div class="player-label">
+          PLAYER 1
+        </div>
+
+        <div
+          class="score"
+          id="p1Score"
+        >
+          LOVE
+        </div>
+
+        <div
+          style="font-size:12px; color:#aaa;"
+          id="p1Games"
+        >
+          GAMES: 0
+        </div>
+      </div>
+
+
+      <div>
+        <div id="status">
+          PRESS START
+        </div>
+      </div>
+
+
+      <div class="score-box">
+
+        <div class="player-label">
+          PLAYER 2 (AI)
+        </div>
+
+        <div
+          class="score"
+          id="p2Score"
+        >
+          LOVE
+        </div>
+
+        <div
+          style="font-size:12px; color:#aaa;"
+          id="p2Games"
+        >
+          GAMES: 0
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <div id="phoneStatus">
+    📱 Phone: Connecting...
+  </div>
+
+
+  <div id="help">
+    <b>A/D or ←/→</b> Move |
+    <b>SPACE</b> Flat |
+    <b>W / ↑</b> Topspin |
+    <b>S / ↓</b> Slice
+  </div>
+
+
+  <div id="controls">
+
+    <button id="startBtn">
+      ▶ Start / Serve
+    </button>
+
+    <button id="resetBtn">
+      ↻ Reset Match
+    </button>
+
+  </div>
+
+
+  <script type="module">
+
+    import * as THREE from
+      "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js";
+
+
+    // ============================================================
+    // SCENE
+    // ============================================================
+
+    const scene =
+      new THREE.Scene();
+
+    scene.background =
+      new THREE.Color(0x0a1526);
+
+    scene.fog =
+      new THREE.FogExp2(
+        0x0a1526,
+        0.015
+      );
+
+
+    const camera =
+      new THREE.PerspectiveCamera(
+        45,
+        window.innerWidth /
+        window.innerHeight,
+        0.1,
+        120
+      );
+
+    camera.position.set(
+      0,
+      13,
+      20
+    );
+
+    camera.lookAt(
+      0,
+      0,
+      -1
+    );
+
+
+    const renderer =
+      new THREE.WebGLRenderer({
+        antialias: true
+      });
+
+    renderer.setSize(
+      window.innerWidth,
+      window.innerHeight
+    );
+
+    renderer.setPixelRatio(
+      Math.min(
+        window.devicePixelRatio,
+        2
+      )
+    );
+
+    renderer.shadowMap.enabled =
+      true;
+
+    renderer.shadowMap.type =
+      THREE.PCFSoftShadowMap;
+
+    document.body.appendChild(
+      renderer.domElement
+    );
+
+
+    scene.add(
+      new THREE.HemisphereLight(
+        0xb1e8ff,
+        0x152218,
+        1.2
+      )
+    );
+
+
+    const sun =
+      new THREE.DirectionalLight(
+        0xffffff,
+        2.2
+      );
+
+    sun.position.set(
+      -12,
+      25,
+      12
+    );
+
+    sun.castShadow =
+      true;
+
+    sun.shadow.mapSize.set(
+      2048,
+      2048
+    );
+
+    scene.add(
+      sun
+    );
+
+
+    // ============================================================
+    // MATERIALS
+    // ============================================================
+
+    const mat = (
+      color,
+      roughness = 0.7
+    ) =>
+      new THREE.MeshStandardMaterial({
+        color,
+        roughness
+      });
+
+
+    const courtMat =
+      mat(
+        0x1d6a59,
+        0.6
+      );
+
+    const borderMat =
+      mat(
+        0x13382f,
+        0.8
+      );
+
+    const wallMat =
+      mat(
+        0x111c2e,
+        0.9
+      );
+
+    const whiteMat =
+      mat(
+        0xffffff,
+        0.4
+      );
+
+
+    function addBox(
+      w,
+      h,
+      d,
+      material,
+      x,
+      y,
+      z
+    ) {
+
+      const mesh =
+        new THREE.Mesh(
+          new THREE.BoxGeometry(
+            w,
+            h,
+            d
+          ),
+          material
+        );
+
+      mesh.position.set(
+        x,
+        y,
+        z
+      );
+
+      mesh.receiveShadow =
+        true;
+
+      mesh.castShadow =
+        true;
+
+      scene.add(
+        mesh
+      );
+
+      return mesh;
+    }
+
+
+    // ============================================================
+    // COURT
+    // ============================================================
+
+    addBox(
+      80,
+      0.1,
+      100,
+      mat(0x0c141c),
+      0,
+      -0.3,
+      0
+    );
+
+
+    addBox(
+      24,
+      0.2,
+      40,
+      borderMat,
+      0,
+      -0.1,
+      0
+    );
+
+
+    addBox(
+      10.97,
+      0.22,
+      23.77,
+      courtMat,
+      0,
+      -0.09,
+      0
+    );
+
+
+    // Walls
+
+    addBox(
+      40,
+      4,
+      1,
+      wallMat,
+      0,
+      1.8,
+      -25
+    );
+
+
+    addBox(
+      40,
+      4,
+      1,
+      wallMat,
+      0,
+      1.8,
+      25
+    );
+
+
+    addBox(
+      1,
+      4,
+      51,
+      wallMat,
+      -20,
+      1.8,
+      0
+    );
+
+
+    addBox(
+      1,
+      4,
+      51,
+      wallMat,
+      20,
+      1.8,
+      0
+    );
+
+
+    // Fence
+
+    const wireframeGeom =
+      new THREE.BoxGeometry(
+        36,
+        3,
+        46
+      );
+
+
+    const fence =
+      new THREE.Mesh(
+        wireframeGeom,
+        new THREE.MeshBasicMaterial({
+          color: 0x223548,
+          wireframe: true
+        })
+      );
+
+
+    fence.position.y =
+      1.5;
+
+
+    scene.add(
+      fence
+    );
+
+
+    // ============================================================
+    // COURT LINES
+    // ============================================================
+
+    function addLine(
+      x1,
+      z1,
+      x2,
+      z2
+    ) {
+
+      const geom =
+        new THREE.BufferGeometry()
+          .setFromPoints([
+            new THREE.Vector3(
+              x1,
+              0.05,
+              z1
+            ),
+
+            new THREE.Vector3(
+              x2,
+              0.05,
+              z2
+            )
+          ]);
+
+
+      scene.add(
+        new THREE.Line(
+          geom,
+          new THREE.LineBasicMaterial({
+            color: 0xffffff
+          })
+        )
+      );
+    }
+
+
+    addLine(
+      -5.48,
+      -11.88,
+      5.48,
+      -11.88
+    );
+
+
+    addLine(
+      -5.48,
+      11.88,
+      5.48,
+      11.88
+    );
+
+
+    addLine(
+      -5.48,
+      -11.88,
+      -5.48,
+      11.88
+    );
+
+
+    addLine(
+      5.48,
+      -11.88,
+      5.48,
+      11.88
+    );
+
+
+    addLine(
+      -4.11,
+      -11.88,
+      -4.11,
+      11.88
+    );
+
+
+    addLine(
+      4.11,
+      -11.88,
+      4.11,
+      11.88
+    );
+
+
+    addLine(
+      -4.11,
+      -6.4,
+      4.11,
+      -6.4
+    );
+
+
+    addLine(
+      -4.11,
+      6.4,
+      4.11,
+      6.4
+    );
+
+
+    addLine(
+      0,
+      -6.4,
+      0,
+      6.4
+    );
+
+
+    addLine(
+      0,
+      -11.88,
+      0,
+      -11.58
+    );
+
+
+    addLine(
+      0,
+      11.58,
+      0,
+      11.88
+    );
+
+
+    // ============================================================
+    // NET
+    // ============================================================
+
+    const netMesh =
+      addBox(
+        11.2,
+        0.95,
+        0.04,
+        mat(
+          0x1f3330
+        ),
+        0,
+        0.55,
+        0
+      );
+
+
+    netMesh.material.transparent =
+      true;
+
+    netMesh.material.opacity =
+      0.65;
+
+
+    addBox(
+      11.3,
+      0.06,
+      0.06,
+      whiteMat,
+      0,
+      1.02,
+      0
+    );
+
+
+    // ============================================================
+    // BALL SHADOW
+    // ============================================================
+
+    const shadowTarget =
+      new THREE.Mesh(
+        new THREE.RingGeometry(
+          0.1,
+          0.28,
+          16
+        ).rotateX(
+          -Math.PI / 2
+        ),
+
+        new THREE.MeshBasicMaterial({
+          color: 0x000000,
+          transparent: true,
+          opacity: 0.5
+        })
+      );
+
+
+    shadowTarget.position.y =
+      0.03;
+
+
+    scene.add(
+      shadowTarget
+    );
+
+
+    // ============================================================
+    // RACKET
+    // ============================================================
+
+    function createProRacket(
+      frameColor,
+      gripColor
+    ) {
+
+      const racket =
+        new THREE.Group();
+
+
+      const handle =
+        new THREE.Mesh(
+          new THREE.CylinderGeometry(
+            0.025,
+            0.03,
+            0.5,
+            12
+          ),
+          mat(
+            gripColor,
+            0.9
+          )
+        );
+
+
+      handle.position.y =
+        -0.25;
+
+
+      handle.castShadow =
+        true;
+
+
+      racket.add(
+        handle
+      );
+
+
+      const frameMat =
+        mat(
+          frameColor,
+          0.3
+        );
+
+
+      const neckLeft =
+        new THREE.Mesh(
+          new THREE.CylinderGeometry(
+            0.012,
+            0.012,
+            0.22
+          ),
+          frameMat
+        );
+
+
+      neckLeft.position.set(
+        -0.035,
+        0.07,
+        0
+      );
+
+
+      neckLeft.rotation.z =
+        -0.3;
+
+
+      racket.add(
+        neckLeft
+      );
+
+
+      const neckRight =
+        neckLeft.clone();
+
+
+      neckRight.position.x =
+        0.035;
+
+
+      neckRight.rotation.z =
+        0.3;
+
+
+      racket.add(
+        neckRight
+      );
+
+
+      const frameRim =
+        new THREE.Mesh(
+          new THREE.TorusGeometry(
+            0.22,
+            0.018,
+            10,
+            32
+          ),
+          frameMat
+        );
+
+
+      frameRim.scale.set(
+        0.88,
+        1.2,
+        1.0
+      );
+
+
+      frameRim.position.y =
+        0.35;
+
+
+      frameRim.castShadow =
+        true;
+
+
+      racket.add(
+        frameRim
+      );
+
+
+      const stringGrid =
+        new THREE.Group();
+
+
+      const stringMat =
+        new THREE.MeshBasicMaterial({
+          color: 0xeeeeee,
+          transparent: true,
+          opacity: 0.5
+        });
+
+
+      for (
+        let i = -0.12;
+        i <= 0.12;
+        i += 0.04
+      ) {
+
+        const vString =
+          new THREE.Mesh(
+            new THREE.CylinderGeometry(
+              0.002,
+              0.002,
+              0.48
+            ),
+            stringMat
+          );
+
+
+        vString.position.set(
+          i,
+          0.35,
+          0
+        );
+
+
+        stringGrid.add(
+          vString
+        );
+      }
+
+
+      for (
+        let j = 0.18;
+        j <= 0.52;
+        j += 0.05
+      ) {
+
+        const hString =
+          new THREE.Mesh(
+            new THREE.CylinderGeometry(
+              0.002,
+              0.002,
+              0.34
+            ),
+            stringMat
+          );
+
+
+        hString.position.set(
+          0,
+          j,
+          0
+        );
+
+
+        hString.rotation.z =
+          Math.PI / 2;
+
+
+        stringGrid.add(
+          hString
+        );
+      }
+
+
+      racket.add(
+        stringGrid
+      );
+
+
+      return racket;
+    }
+
+
+    // ============================================================
+    // PLAYER
+    // ============================================================
+
+    function createProPlayer(
+      shirtColor,
+      shortsColor,
+      skinColor,
+      accessoryColor,
+      isFacingAway = true
+    ) {
+
+      const playerGroup =
+        new THREE.Group();
+
+
+      const skinMat =
+        mat(
+          skinColor,
+          0.8
+        );
+
+
+      const shirtMat =
+        mat(
+          shirtColor,
+          0.6
+        );
+
+
+      const shortsMat =
+        mat(
+          shortsColor,
+          0.7
+        );
+
+
+      const shoeMat =
+        mat(
+          0xffffff,
+          0.5
+        );
+
+
+      const torso =
+        new THREE.Mesh(
+          new THREE.CylinderGeometry(
+            0.36,
+            0.3,
+            0.95,
+            12
+          ),
+          shirtMat
+        );
+
+
+      torso.position.y =
+        1.25;
+
+
+      torso.castShadow =
+        true;
+
+
+      playerGroup.add(
+        torso
+      );
+
+
+      const hips =
+        new THREE.Mesh(
+          new THREE.CylinderGeometry(
+            0.31,
+            0.33,
+            0.4,
+            12
+          ),
+          shortsMat
+        );
+
+
+      hips.position.y =
+        0.8;
+
+
+      hips.castShadow =
+        true;
+
+
+      playerGroup.add(
+        hips
+      );
+
+
+      const headGroup =
+        new THREE.Group();
+
+
+      headGroup.position.y =
+        1.98;
+
+
+      const head =
+        new THREE.Mesh(
+          new THREE.SphereGeometry(
+            0.22,
+            16,
+            16
+          ),
+          skinMat
+        );
+
+
+      head.castShadow =
+        true;
+
+
+      headGroup.add(
+        head
+      );
+
+
+      const headband =
+        new THREE.Mesh(
+          new THREE.TorusGeometry(
+            0.21,
+            0.035,
+            8,
+            20
+          ),
+          mat(
+            accessoryColor,
+            0.5
+          )
+        );
+
+
+      headband.rotation.x =
+        Math.PI / 2;
+
+
+      headband.position.y =
+        0.05;
+
+
+      headGroup.add(
+        headband
+      );
+
+
+      playerGroup.add(
+        headGroup
+      );
+
+
+      // Legs
+
+      const legGeom =
+        new THREE.CylinderGeometry(
+          0.09,
+          0.075,
+          0.62,
+          10
+        );
+
+
+      legGeom.translate(
+        0,
+        -0.31,
+        0
+      );
+
+
+      const leftLegGroup =
+        new THREE.Group();
+
+
+      leftLegGroup.position.set(
+        -0.15,
+        0.64,
+        0
+      );
+
+
+      const leftLeg =
+        new THREE.Mesh(
+          legGeom,
+          skinMat
+        );
+
+
+      leftLegGroup.add(
+        leftLeg
+      );
+
+
+      const leftShoe =
+        new THREE.Mesh(
+          new THREE.BoxGeometry(
+            0.15,
+            0.13,
+            0.3
+          ),
+          shoeMat
+        );
+
+
+      leftShoe.position.set(
+        0,
+        -0.58,
+        isFacingAway
+          ? -0.05
+          : 0.05
+      );
+
+
+      leftLegGroup.add(
+        leftShoe
+      );
+
+
+      playerGroup.add(
+        leftLegGroup
+      );
+
+
+      const rightLegGroup =
+        new THREE.Group();
+
+
+      rightLegGroup.position.set(
+        0.15,
+        0.64,
+        0
+      );
+
+
+      const rightLeg =
+        new THREE.Mesh(
+          legGeom,
+          skinMat
+        );
+
+
+      rightLegGroup.add(
+        rightLeg
+      );
+
+
+      const rightShoe =
+        leftShoe.clone();
+
+
+      rightShoe.position.set(
+        0,
+        -0.58,
+        isFacingAway
+          ? -0.05
+          : 0.05
+      );
+
+
+      rightLegGroup.add(
+        rightShoe
+      );
+
+
+      playerGroup.add(
+        rightLegGroup
+      );
+
+
+      // Racket arm
+
+      const armPivot =
+        new THREE.Group();
+
+
+      armPivot.position.set(
+        0.38,
+        1.5,
+        0
+      );
+
+
+      const upperArm =
+        new THREE.Mesh(
+          new THREE.CylinderGeometry(
+            0.07,
+            0.06,
+            0.45
+          ),
+          shirtMat
+        );
+
+
+      upperArm.position.set(
+        0.12,
+        -0.15,
+        0
+      );
+
+
+      upperArm.rotation.z =
+        -0.7;
+
+
+      armPivot.add(
+        upperArm
+      );
+
+
+      const forearm =
+        new THREE.Mesh(
+          new THREE.CylinderGeometry(
+            0.06,
+            0.05,
+            0.42
+          ),
+          skinMat
+        );
+
+
+      forearm.position.set(
+        0.32,
+        -0.32,
+        -0.12
+      );
+
+
+      forearm.rotation.x =
+        -Math.PI / 3;
+
+
+      forearm.rotation.y =
+        0.3;
+
+
+      armPivot.add(
+        forearm
+      );
+
+
+      const hand =
+        new THREE.Mesh(
+          new THREE.SphereGeometry(
+            0.06,
+            8,
+            8
+          ),
+          skinMat
+        );
+
+
+      hand.position.set(
+        0.36,
+        -0.48,
+        -0.28
+      );
+
+
+      armPivot.add(
+        hand
+      );
+
+
+      const racket =
+        createProRacket(
+          0xd22222,
+          0x111111
+        );
+
+
+      racket.position.set(
+        0.36,
+        -0.48,
+        -0.28
+      );
+
+
+      racket.rotation.set(
+        Math.PI / 3,
+        -Math.PI / 6,
+        -Math.PI / 4
+      );
+
+
+      armPivot.add(
+        racket
+      );
+
+
+      playerGroup.add(
+        armPivot
+      );
+
+
+      // Left arm
+
+      const leftArmPivot =
+        new THREE.Group();
+
+
+      leftArmPivot.position.set(
+        -0.38,
+        1.5,
+        0
+      );
+
+
+      const leftArm =
+        new THREE.Mesh(
+          new THREE.CylinderGeometry(
+            0.06,
+            0.05,
+            0.75
+          ),
+          skinMat
+        );
+
+
+      leftArm.position.set(
+        -0.04,
+        -0.32,
+        0
+      );
+
+
+      leftArm.rotation.z =
+        0.25;
+
+
+      leftArmPivot.add(
+        leftArm
+      );
+
+
+      playerGroup.add(
+        leftArmPivot
+      );
+
+
+      if (!isFacingAway) {
+
+        playerGroup.rotation.y =
+          Math.PI;
+      }
+
+
+      scene.add(
+        playerGroup
+      );
+
+
+      return {
+        group: playerGroup,
+        torso,
+        armPivot,
+        leftArmPivot,
+        leftLegGroup,
+        rightLegGroup,
+        racket,
+        swingTimer: 0,
+        serveTimer: 0
+      };
+    }
+
+
+    const player1 =
+      createProPlayer(
+        0x1976d2,
+        0xffffff,
+        0xd2a679,
+        0xffeb3b,
+        true
+      );
+
+
+    player1.group.position.set(
+      0,
+      0,
+      9.5
+    );
+
+
+    const player2 =
+      createProPlayer(
+        0xe65100,
+        0x212121,
+        0x8d5524,
+        0x4caf50,
+        false
+      );
+
+
+    player2.group.position.set(
+      0,
+      0,
+      -9.5
+    );
+
+
+    // ============================================================
+    // BALL
+    // ============================================================
+
+    const ball =
+      new THREE.Mesh(
+        new THREE.SphereGeometry(
+          0.16,
+          16,
+          16
+        ),
+        mat(
+          0xd4f800,
+          0.2
+        )
+      );
+
+
+    ball.castShadow =
+      true;
+
+
+    scene.add(
+      ball
+    );
+
+
+    // ============================================================
+    // GAME STATE
+    // ============================================================
+
+    let state =
+      "READY";
+
+
+    let currentServer =
+      0;
+
+
+    let p1Points = 0,
+        p2Points = 0;
+
+
+    let p1Games = 0,
+        p2Games = 0;
+
+
+    let p1Sets = 0,
+        p2Sets = 0;
+
+
+    let completedSets = [];
+
+
+    const tennisScores = [
+      "LOVE",
+      "15",
+      "30",
+      "40"
+    ];
+
+
+    let ballPos =
+      new THREE.Vector3();
+
+
+    let ballVel =
+      new THREE.Vector3();
+
+
+    let ballSpin = {
+      topspin: 0
+    };
+
+
+    let bounceCount =
+      0;
+
+
+    let lastHitBy =
+      -1;
+
+
+    let moveDir =
+      0;
+
+
+    let animTime =
+      0;
+
+
+    // ============================================================
+    // PHONE CONTROL VARIABLES
+    // ============================================================
+
+    let phoneMove =
+      0;
+
+
+    let phoneConnected =
+      false;
+
+
+    let lastPhoneSwing =
+      0;
+
+
+    // ============================================================
+    // PHONE WEBSOCKET
+    // ============================================================
+
+    const phoneStatus =
+      document.getElementById(
+        "phoneStatus"
+      );
+
+
+    const protocol =
+      location.protocol ===
+      "https:"
+        ? "wss:"
+        : "ws:";
+
+
+    const phoneSocket =
+      new WebSocket(
+        protocol +
+        "//" +
+        location.host
+      );
+
+
+    phoneSocket.onopen =
+      () => {
+
+        phoneConnected =
+          true;
+
+
+        phoneStatus.innerText =
+          "📱 Phone: Connected";
+
+
+        console.log(
+          "Phone WebSocket connected"
+        );
+      };
+
+
+    phoneSocket.onclose =
+      () => {
+
+        phoneConnected =
+          false;
+
+
+        phoneMove =
+          0;
+
+
+        phoneStatus.innerText =
+          "📱 Phone: Disconnected";
+
+
+        console.log(
+          "Phone WebSocket disconnected"
+        );
+      };
+
+
+    phoneSocket.onerror =
+      () => {
+
+        phoneConnected =
+          false;
+
+
+        phoneMove =
+          0;
+
+
+        phoneStatus.innerText =
+          "📱 Phone: Connection Error";
+      };
+
+
+    phoneSocket.onmessage =
+      (event) => {
+
+        try {
+
+          const data =
+            JSON.parse(
+              event.data
+            );
+
+
+          // Server connection message
+
+          if (
+            data.type ===
+            "connected"
+          ) {
+
+            return;
+          }
+
+
+          // ======================================================
+          // PHONE SWING
+          // ======================================================
+
+          if (
+            data.type ===
+              "swing" &&
+
+            data.player ===
+              1
+          ) {
+
+            const now =
+              Date.now();
+
+
+            if (
+              now -
+              lastPhoneSwing <
+              300
+            ) {
+
+              return;
+            }
+
+
+            lastPhoneSwing =
+              now;
+
+
+            const power =
+              Number(
+                data.power
+              ) || 0;
+
+
+            console.log(
+              "PHONE SWING:",
+              power
+            );
+
+
+            // Every phone swing is
+            // currently a flat shot.
+
+            handleSwing(
+              "FLAT"
+            );
+
+
+            return;
+          }
+
+
+          // ======================================================
+          // PHONE MOVEMENT
+          // ======================================================
+
+          if (
+            data.type ===
+              "move" &&
+
+            data.player ===
+              1
+          ) {
+
+            handlePhoneMove(
+              data
+            );
+
+
+            return;
+          }
+
+        }
+
+        catch (error) {
+
+          console.error(
+            "Invalid phone message:",
+            error
+          );
+        }
+      };
+
+
+    // ============================================================
+    // PHONE MOVEMENT
+    // ============================================================
+
+    function handlePhoneMove(
+      data
+    ) {
+
+      if (
+        data.type !==
+          "move" ||
+
+        data.player !==
+          1
+      ) {
+
+        return;
+      }
+
+
+      const value =
+        Number(
+          data.x
+        );
+
+
+      if (
+        Number.isFinite(
+          value
+        )
+      ) {
+
+        phoneMove =
+          THREE.MathUtils.clamp(
+            value,
+            -1,
+            1
+          );
+      }
+    }
+
+
+    // ============================================================
+    // GAME SCORE
+    // ============================================================
+
+    function setStatus(
+      text
+    ) {
+
+      document.getElementById(
+        "status"
+      ).textContent =
+        text;
+    }
+
+
+    function updateScoreDisplay() {
+
+      if (
+        p1Points >= 3 &&
+        p2Points >= 3
+      ) {
+
+        if (
+          p1Points ===
+          p2Points
+        ) {
+
+          document.getElementById(
+            "p1Score"
+          ).textContent =
+            "DEUCE";
+
+
+          document.getElementById(
+            "p2Score"
+          ).textContent =
+            "DEUCE";
+
+        }
+
+        else if (
+          p1Points ===
+          p2Points + 1
+        ) {
+
+          document.getElementById(
+            "p1Score"
+          ).textContent =
+            "ADV";
+
+
+          document.getElementById(
+            "p2Score"
+          ).textContent =
+            "40";
+
+        }
+
+        else if (
+          p2Points ===
+          p1Points + 1
+        ) {
+
+          document.getElementById(
+            "p1Score"
+          ).textContent =
+            "40";
+
+
+          document.getElementById(
+            "p2Score"
+          ).textContent =
+            "ADV";
+        }
+
+      }
+
+      else {
+
+        document.getElementById(
+          "p1Score"
+        ).textContent =
+          tennisScores[
+            Math.min(
+              p1Points,
+              3
+            )
+          ];
+
+
+        document.getElementById(
+          "p2Score"
+        ).textContent =
+          tennisScores[
+            Math.min(
+              p2Points,
+              3
+            )
+          ];
+      }
+
+
+      document.getElementById(
+        "p1Games"
+      ).textContent =
+        `GAMES: ${p1Games}`;
+
+
+      document.getElementById(
+        "p2Games"
+      ).textContent =
+        `GAMES: ${p2Games}`;
+
+
+      let setsText =
+        `SETS: P1 [${p1Sets}] - [${p2Sets}] P2`;
+
+
+      if (
+        completedSets.length >
+        0
+      ) {
+
+        setsText +=
+          ` (${completedSets.join(", ")})`;
+      }
+
+
+      document.getElementById(
+        "sets-summary"
+      ).textContent =
+        setsText;
+    }
+
+
+    function checkGameAndSetStatus(
+      winner
+    ) {
+
+      if (
+        winner === 0
+      )
+        p1Points++;
+
+      else
+        p2Points++;
+
+
+      if (
+        (
+          p1Points >= 4 &&
+          p1Points -
+          p2Points >= 2
+        ) ||
+
+        (
+          p2Points >= 4 &&
+          p2Points -
+          p1Points >= 2
+        )
+      ) {
+
+        if (
+          p1Points >
+          p2Points
+        )
+          p1Games++;
+
+        else
+          p2Games++;
+
+
+        p1Points =
+          0;
+
+        p2Points =
+          0;
+
+
+        setStatus(
+          p1Points >
+          p2Points
+            ? "GAME PLAYER 1!"
+            : "GAME PLAYER 2!"
+        );
+
+
+        if (
+          (
+            p1Games >= 6 &&
+            p1Games -
+            p2Games >= 2
+          ) ||
+
+          (
+            p2Games >= 6 &&
+            p2Games -
+            p1Games >= 2
+          )
+        ) {
+
+          completedSets.push(
+            `${p1Games}-${p2Games}`
+          );
+
+
+          if (
+            p1Games >
+            p2Games
+          )
+            p1Sets++;
+
+          else
+            p2Sets++;
+
+
+          p1Games =
+            0;
+
+          p2Games =
+            0;
+
+
+          if (
+            p1Sets === 3 ||
+            p2Sets === 3
+          ) {
+
+            state =
+              "MATCH_OVER";
+
+
+            setStatus(
+              p1Sets === 3
+                ? "🏆 MATCH WON BY PLAYER 1!"
+                : "🏆 MATCH WON BY PLAYER 2!"
+            );
+
+
+            updateScoreDisplay();
+
+            return;
+          }
+        }
+      }
+
+
+      updateScoreDisplay();
+    }
+
+
+    function awardPoint(
+      winner
+    ) {
+
+      state =
+        "POINT_OVER";
+
+
+      checkGameAndSetStatus(
+        winner
+      );
+
+
+      if (
+        state ===
+        "MATCH_OVER"
+      )
+        return;
+
+
+      currentServer =
+        currentServer === 0
+          ? 1
+          : 0;
+
+
+      setTimeout(
+        prepareServe,
+        1500
+      );
+    }
+
+
+    // ============================================================
+    // SERVE
+    // ============================================================
+
+    function prepareServe() {
+
+      state =
+        "SERVING";
+
+
+      bounceCount =
+        0;
+
+
+      lastHitBy =
+        currentServer;
+
+
+      ballSpin.topspin =
+        0;
+
+
+      if (
+        currentServer === 0
+      ) {
+
+        player1.group.position.set(
+          2.0,
+          0,
+          9.8
+        );
+
+
+        ballPos.set(
+          2.0,
+          1.2,
+          8.8
+        );
+
+
+        setStatus(
+          "YOUR SERVE (PRESS START/PHONE)"
+        );
+
+      }
+
+      else {
+
+        player2.group.position.set(
+          -2.0,
+          0,
+          -9.8
+        );
+
+
+        ballPos.set(
+          -2.0,
+          1.2,
+          -8.8
+        );
+
+
+        setStatus(
+          "AI SERVING..."
+        );
+
+
+        setTimeout(
+          executeAIServe,
+          1000
+        );
+      }
+
+
+      ballVel.set(
+        0,
+        0,
+        0
+      );
+
+
+      ball.position.copy(
+        ballPos
+      );
+    }
+
+
+    function executeServe() {
+
+      if (
+        state !==
+          "SERVING" ||
+
+        currentServer !==
+          0
+      )
+        return;
+
+
+      player1.serveTimer =
+        0.45;
+
+
+      state =
+        "IN_RALLY";
+
+
+      ballVel.set(
+        -0.8,
+        5.2,
+        -13.5
+      );
+
+
+      ballSpin.topspin =
+        2.0;
+
+
+      setStatus(
+        "RALLY!"
+      );
+    }
+
+
+    function executeAIServe() {
+
+      if (
+        state !==
+          "SERVING" ||
+
+        currentServer !==
+          1
+      )
+        return;
+
+
+      player2.serveTimer =
+        0.45;
+
+
+      state =
+        "IN_RALLY";
+
+
+      ballVel.set(
+        0.8,
+        5.0,
+        13.5
+      );
+
+
+      ballSpin.topspin =
+        2.0;
+
+
+      setStatus(
+        "RALLY!"
+      );
+    }
+
+
+    // ============================================================
+    // SWING
+    // ============================================================
+
+    function handleSwing(
+      shotType = "FLAT"
+    ) {
+
+      if (
+        state ===
+          "SERVING" &&
+
+        currentServer ===
+          0
+      ) {
+
+        executeServe();
+
+        return;
+      }
+
+
+      if (
+        state !==
+        "IN_RALLY"
+      )
+        return;
+
+
+      player1.swingTimer =
+        0.35;
+
+
+      const distanceZ =
+        Math.abs(
+          ballPos.z -
+          player1.group.position.z
+        );
+
+
+      const distanceX =
+        Math.abs(
+          ballPos.x -
+          player1.group.position.x
+        );
+
+
+      if (
+        distanceZ < 1.8 &&
+
+        distanceX < 2.0 &&
+
+        ballPos.y < 3.2 &&
+
+        ballVel.z > 0
+      ) {
+
+        lastHitBy =
+          0;
+
+
+        bounceCount =
+          0;
+
+
+        const offset =
+          (
+            ballPos.x -
+            player1.group.position.x
+          ) *
+          0.95;
+
+
+        if (
+          shotType ===
+          "TOPSPIN"
+        ) {
+
+          ballVel.set(
+            offset * 2.2,
+            6.8,
+            -15.0
+          );
+
+
+          ballSpin.topspin =
+            8.5;
+
+
+          setStatus(
+            "TOPSPIN DRIVE!"
+          );
+
+        }
+
+        else if (
+          shotType ===
+          "SLICE"
+        ) {
+
+          ballVel.set(
+            offset * 1.4,
+            3.2,
+            -10.5
+          );
+
+
+          ballSpin.topspin =
+            -6.0;
+
+
+          setStatus(
+            "DROP SLICE!"
+          );
+
+        }
+
+        else {
+
+          ballVel.set(
+            offset * 2.8,
+            4.6,
+            -14.2
+          );
+
+
+          ballSpin.topspin =
+            1.0;
+
+
+          setStatus(
+            "FLAT SMASH!"
+          );
+        }
+      }
+    }
+
+
+    // ============================================================
+    // PHYSICS
+    // ============================================================
+
+    function updatePhysics(
+      delta
+    ) {
+
+      if (
+        state !==
+        "IN_RALLY"
+      )
+        return;
+
+
+      const gravity =
+        -9.81;
+
+
+      const magnusForceY =
+        -ballSpin.topspin *
+        0.85;
+
+
+      ballVel.y +=
+        (
+          gravity +
+          magnusForceY
+        ) *
+        delta;
+
+
+      ballPos.addScaledVector(
+        ballVel,
+        delta
+      );
+
+
+      if (
+        ballPos.y <= 0.16
+      ) {
+
+        ballPos.y =
+          0.16;
+
+
+        ballVel.y =
+          -ballVel.y *
+          (
+            ballSpin.topspin < 0
+              ? 0.65
+              : 0.78
+          );
+
+
+        ballVel.x *=
+          0.88;
+
+
+        ballVel.z *=
+          0.88 +
+          (
+            ballSpin.topspin *
+            0.01
+          );
+
+
+        ballSpin.topspin *=
+          0.3;
+
+
+        bounceCount++;
+
+
+        const isOut =
+          Math.abs(
+            ballPos.x
+          ) > 5.2 ||
+
+          Math.abs(
+            ballPos.z
+          ) > 11.88;
+
+
+        if (
+          isOut
+        ) {
+
+          awardPoint(
+            lastHitBy === 0
+              ? 1
+              : 0
+          );
+
+          return;
+        }
+
+
+        if (
+          bounceCount >= 2
+        ) {
+
+          awardPoint(
+            lastHitBy
+          );
+
+          return;
+        }
+      }
+
+
+      if (
+        Math.abs(
+          ballPos.z
+        ) < 0.12 &&
+
+        ballPos.y <
+        0.98
+      ) {
+
+        ballVel.z =
+          -ballVel.z *
+          0.25;
+
+
+        ballVel.y =
+          1.2;
+
+
+        setStatus(
+          "NET FAULT!"
+        );
+      }
+
+
+      // ==========================================================
+      // AI
+      // ==========================================================
+
+      if (
+        ballVel.z < 0 &&
+        state ===
+        "IN_RALLY"
+      ) {
+
+        const targetX =
+          THREE.MathUtils.clamp(
+            ballPos.x,
+            -4.0,
+            4.0
+          );
+
+
+        const aiMoveDiff =
+          targetX -
+          player2.group.position.x;
+
+
+        player2.group.position.x +=
+          aiMoveDiff *
+          delta *
+          3.2;
+
+
+        if (
+          Math.abs(
+            ballPos.z -
+            player2.group.position.z
+          ) < 1.6 &&
+
+          ballPos.y < 3.0
+        ) {
+
+          player2.swingTimer =
+            0.35;
+
+
+          lastHitBy =
+            1;
+
+
+          bounceCount =
+            0;
+
+
+          const returnX =
+            (
+              Math.random() -
+              0.5
+            ) *
+            6.5;
+
+
+          ballVel.set(
+            returnX -
+            player2.group.position.x *
+            0.3,
+
+            4.5 +
+            Math.random() *
+            1.8,
+
+            13.0 +
+            Math.random() *
+            2
+          );
+
+
+          ballSpin.topspin =
+            2.0;
+
+
+          setStatus(
+            "AI RETURNED!"
+          );
+        }
+      }
+
+
+      if (
+        Math.abs(
+          ballPos.z
+        ) > 13.5
+      ) {
+
+        awardPoint(
+          lastHitBy
+        );
+      }
+
+
+      ball.position.copy(
+        ballPos
+      );
+
+
+      shadowTarget.position.set(
+        ballPos.x,
+        0.03,
+        ballPos.z
+      );
+
+
+      const shadowScale =
+        Math.max(
+          0.3,
+          1.0 -
+          ballPos.y *
+          0.12
+        );
+
+
+      shadowTarget.scale.set(
+        shadowScale,
+        shadowScale,
+        shadowScale
+      );
+    }
+
+
+    // ============================================================
+    // CHARACTER ANIMATION
+    // ============================================================
+
+    function animateCharacter(
+      player,
+      isMoving,
+      delta
+    ) {
+
+      if (
+        isMoving
+      ) {
+
+        const stride =
+          Math.sin(
+            animTime * 14
+          ) *
+          0.65;
+
+
+        player.leftLegGroup.rotation.x =
+          stride;
+
+
+        player.rightLegGroup.rotation.x =
+          -stride;
+
+      }
+
+      else {
+
+        player.leftLegGroup.rotation.x *=
+          0.8;
+
+
+        player.rightLegGroup.rotation.x *=
+          0.8;
+      }
+
+
+      player.torso.position.y =
+        1.25 +
+        Math.sin(
+          animTime * 4
+        ) *
+        0.02;
+
+
+      if (
+        player.swingTimer >
+        0
+      ) {
+
+        player.swingTimer -=
+          delta;
+
+
+        const progress =
+          (
+            0.35 -
+            player.swingTimer
+          ) /
+          0.35;
+
+
+        const swingAngle =
+          Math.sin(
+            progress *
+            Math.PI
+          );
+
+
+        player.armPivot.rotation.y =
+          -swingAngle *
+          2.2;
+
+
+        player.armPivot.rotation.x =
+          -swingAngle *
+          0.8;
+
+
+        player.torso.rotation.y =
+          swingAngle *
+          0.4;
+
+      }
+
+      else if (
+        player.serveTimer >
+        0
+      ) {
+
+        player.serveTimer -=
+          delta;
+
+
+        const progress =
+          (
+            0.45 -
+            player.serveTimer
+          ) /
+          0.45;
+
+
+        const serveAngle =
+          Math.sin(
+            progress *
+            Math.PI
+          );
+
+
+        player.armPivot.rotation.x =
+          -serveAngle *
+          2.5;
+
+
+        player.leftArmPivot.rotation.x =
+          serveAngle *
+          1.8;
+
+      }
+
+      else {
+
+        player.armPivot.rotation.set(
+          0,
+          0,
+          0
+        );
+
+
+        player.leftArmPivot.rotation.set(
+          0,
+          0,
+          0
+        );
+
+
+        player.torso.rotation.y =
+          0;
+      }
+    }
+
+
+    // ============================================================
+    // RESET
+    // ============================================================
+
+    function resetMatch() {
+
+      state =
+        "READY";
+
+
+      p1Points =
+        0;
+
+      p2Points =
+        0;
+
+
+      p1Games =
+        0;
+
+      p2Games =
+        0;
+
+
+      p1Sets =
+        0;
+
+      p2Sets =
+        0;
+
+
+      completedSets =
+        [];
+
+
+      phoneMove =
+        0;
+
+
+      updateScoreDisplay();
+
+
+      player1.group.position.set(
+        0,
+        0,
+        9.5
+      );
+
+
+      player2.group.position.set(
+        0,
+        0,
+        -9.5
+      );
+
+
+      ballPos.set(
+        0,
+        1,
+        0
+      );
+
+
+      ball.position.copy(
+        ballPos
+      );
+
+
+      shadowTarget.position.set(
+        0,
+        0.03,
+        0
+      );
+
+
+      setStatus(
+        "PRESS START"
+      );
+    }
+
+
+    // ============================================================
+    // KEYBOARD CONTROLS
+    // ============================================================
+
+    window.addEventListener(
+      "keydown",
+      (e) => {
+
+        if (
+          e.code ===
+            "KeyA" ||
+
+          e.code ===
+            "ArrowLeft"
+        ) {
+
+          moveDir =
+            -1;
+        }
+
+
+        if (
+          e.code ===
+            "KeyD" ||
+
+          e.code ===
+            "ArrowRight"
+        ) {
+
+          moveDir =
+            1;
+        }
+
+
+        if (
+          e.code ===
+          "Space"
+        ) {
+
+          handleSwing(
+            "FLAT"
+          );
+        }
+
+
+        if (
+          e.code ===
+            "KeyW" ||
+
+          e.code ===
+            "ArrowUp"
+        ) {
+
+          handleSwing(
+            "TOPSPIN"
+          );
+        }
+
+
+        if (
+          e.code ===
+            "KeyS" ||
+
+          e.code ===
+            "ArrowDown"
+        ) {
+
+          handleSwing(
+            "SLICE"
+          );
+        }
+      }
+    );
+
+
+    window.addEventListener(
+      "keyup",
+      (e) => {
+
+        if (
+          [
+            "KeyA",
+            "KeyD",
+            "ArrowLeft",
+            "ArrowRight"
+          ].includes(
+            e.code
+          )
+        ) {
+
+          moveDir =
+            0;
+        }
+      }
+    );
+
+
+    // ============================================================
+    // BUTTONS
+    // ============================================================
+
+    document
+      .getElementById(
+        "startBtn"
+      )
+      .addEventListener(
+        "click",
+        () => {
+
+          if (
+            state ===
+            "READY"
+          ) {
+
+            prepareServe();
+
+          }
+
+          else if (
+            state ===
+            "SERVING"
+          ) {
+
+            executeServe();
+          }
+        }
+      );
+
+
+    document
+      .getElementById(
+        "resetBtn"
+      )
+      .addEventListener(
+        "click",
+        resetMatch
+      );
+
+
+    // ============================================================
+    // MAIN LOOP
+    // ============================================================
+
+    let lastTime =
+      performance.now();
+
+
+    function animate(
+      time
+    ) {
+
+      requestAnimationFrame(
+        animate
+      );
+
+
+      const delta =
+        Math.min(
+          0.035,
+          (
+            time -
+            lastTime
+          ) / 1000
+        );
+
+
+      lastTime =
+        time;
+
+
+      animTime +=
+        delta;
+
+
+      // ==========================================================
+      // PLAYER 1 MOVEMENT
+      // ==========================================================
+
+      const prevX1 =
+        player1.group.position.x;
+
+
+      /*
+        Keyboard:
+
+        -1 = LEFT
+         0 = CENTER
+        +1 = RIGHT
+
+
+        Phone:
+
+        -1 = LEFT
+         0 = CENTER
+        +1 = RIGHT
+      */
+
+      let combinedMove =
+        moveDir +
+        phoneMove;
+
+
+      combinedMove =
+        THREE.MathUtils.clamp(
+          combinedMove,
+          -1,
+          1
+        );
+
+
+      player1.group.position.x =
+        THREE.MathUtils.clamp(
+          player1.group.position.x +
+          combinedMove *
+          delta *
+          5.5,
+
+          -4.5,
+          4.5
+        );
+
+
+      const isP1Moving =
+        Math.abs(
+          player1.group.position.x -
+          prevX1
+        ) > 0.001;
+
+
+      // ==========================================================
+      // AI MOVEMENT
+      // ==========================================================
+
+      const prevX2 =
+        player2.group.position.x;
+
+
+      const isP2Moving =
+        Math.abs(
+          player2.group.position.x -
+          prevX2
+        ) > 0.001;
+
+
+      // ==========================================================
+      // ANIMATION
+      // ==========================================================
+
+      animateCharacter(
+        player1,
+        isP1Moving,
+        delta
+      );
+
+
+      animateCharacter(
+        player2,
+        isP2Moving,
+        delta
+      );
+
+
+      // ==========================================================
+      // PHYSICS
+      // ==========================================================
+
+      updatePhysics(
+        delta
+      );
+
+
+      renderer.render(
+        scene,
+        camera
+      );
+    }
+
+
+    // ============================================================
+    // RESIZE
+    // ============================================================
+
+    window.addEventListener(
+      "resize",
+      () => {
+
+        camera.aspect =
+          window.innerWidth /
+          window.innerHeight;
+
+
+        camera.updateProjectionMatrix();
+
+
+        renderer.setSize(
+          window.innerWidth,
+          window.innerHeight
+        );
+      }
+    );
+
+
+    // ============================================================
+    // START
+    // ============================================================
+
+    resetMatch();
+
+
+    animate(
+      performance.now()
+    );
+
+  </script>
+
+</body>
+</html>
+
